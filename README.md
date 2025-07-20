@@ -22,10 +22,10 @@ ddtrace-run python app.py
 ## Container
 
 ```bash
-docker build -t llm-demo .
-docker run -p 8000:8000 \
-  -e OPENAI_API_KEY=<key> \
-  -e DD_API_KEY=<key> \
+docker run -d --name llm-demo \
+  -p 8000:8000 \
+  -e OPENAI_API_KEY=<your-openai-key> \
+  -e DD_API_KEY=<your-datadog-key> \
   llm-demo
 ```
 
