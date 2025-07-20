@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head>
+  <title>Latency Chaos Button</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>
+  async function toggleChaos() {
+    await fetch("/api/chaos", {method:"POST"});
+    alert("Chaos mode toggled! Use /play to observe latency.");
+  }
+  </script>
+</head>
+<body class="window">
+  <h2>Latency Chaos Button</h2>
+  <button class="danger" onclick="toggleChaos()">SLOW DOWN</button>
+  <p>Click once to introduce extra latency, click again to disable.</p>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <title>Prompt Playground</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>
+  async function sendPrompt() {
+    const res = await fetch("/api/play", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:document.getElementById('p').value})
+    });
+    const j = await res.json();
+    document.getElementById('out').innerText = j.response;
+  }
+  </script>
+</head>
+<body class="window">
+  <h2>Prompt Playground</h2>
+  <input id="p" size="60" placeholder="Ask me anything">
+  <button class="primary" onclick="sendPrompt()">Send</button>
+  <pre id="out"></pre>
+</body>
+</html>
