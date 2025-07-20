@@ -4,12 +4,15 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DD_LLM_OBSERVABILITY_ENABLED=true \
+    DD_LLMOBS_ENABLED=1 \
+    DD_LLMOBS_ML_APP=llm-play-app \
     DD_SERVICE=llm-play-app \
-    DD_ENV=production \
+    DD_LLMOBS_AGENTLESS_ENABLED=false \
+    DD_ENV=local \
     DD_TRACE_ENABLED=true \
     DD_LOGS_INJECTION=true \
     DD_VERSION=1.0.0
+
 
 # Set working directory
 WORKDIR /app

@@ -1,6 +1,5 @@
 Flask>=3.0
 openai>=1.25
 ddtrace==3.10.2
-datadog-llm>=0.2  # ← Add this line
 python-dotenv>=1.0
 gunicorn>=22.0
