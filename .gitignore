@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+
+# Docker
+*.log
+*.pid
+*.tar
+*.gz
+*.swp
+.dockerignore
+
+# VSCode/IDE
+.vscode/
+.idea/
+
+# Bytecode / DS_Store
+.DS_Store
+
+# Virtual environments
+venv/
+.env/

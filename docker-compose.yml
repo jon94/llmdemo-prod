@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: llm-play-app
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DD_SERVICE=llm-play-app
+      - DD_ENV=dev
+      - DD_TRACE_ENABLED=true
+      - DD_LLM_OBSERVABILITY_ENABLED=true
+      - DD_AGENT_HOST=datadog
+      - DD_LOGS_INJECTION=true
+    depends_on:
+      - datadog
+    ports:
+      - "5000:5000"
+    command: >
+      ddtrace-run gunicorn -w 4 -b 0.0.0.0:5000 app:app
+
+  datadog:
+    image: gcr.io/datadoghq/agent:7
+    container_name: datadog
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_APM_ENABLED=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      - DD_CONTAINER_EXCLUDE="name:datadog"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    ports:
+      - "8126:8126"  # APM trace intake port
