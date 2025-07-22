@@ -4,10 +4,16 @@
   <title>Latency Chaos Button</title>
   <link rel="stylesheet" href="/static/style.css">
   <script>
-  async function toggleChaos() {
-    await fetch("/api/chaos", {method:"POST"});
-    alert("Chaos mode toggled! Use /play to observe latency.");
-  }
+    const userName = sessionStorage.getItem("user_name") || "anonymous";
+
+    async function toggleChaos() {
+      await fetch("/api/chaos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_name: userName })
+      });
+      alert("Chaos mode toggled! Use /play to observe latency.");
+    }
   </script>
 </head>
 <body class="window">

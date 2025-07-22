@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <title>LLM Stage Menu</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="window">
+  <h1>Welcome to the LLM Demo</h1>
+  <p><strong>User:</strong> <span id="userDisplay"></span></p>
+
+  <ul>
+    <li><a href="/play">Prompt Playground</a></li>
+    <li><a href="/ctf">Guardrail CTF</a></li>
+    <li><a href="/chaos">Latency Chaos Button</a></li>
+    <li><a href="/security">LLM Security Drill</a></li>
+  </ul>
+
+  <script>
+    const userName = sessionStorage.getItem("user_name") || "anonymous";
+    document.getElementById("userDisplay").textContent = userName;
+  </script>
+</body>
+</html>

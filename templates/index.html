@@ -4,13 +4,24 @@
   <title>LLM Stage Demo</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="window">
   <h1>LLM Stage Demo</h1>
-  <ul>
-    <li><a href="/play">Prompt Playground</a></li>
-    <li><a href="/ctf">Guardrail CTF</a></li>
-    <li><a href="/chaos">Latency Chaos Button</a></li>
-    <li><a href="/security">LLM Security Drill</a></li>
-  </ul>
+
+  <h2>Start Demo</h2>
+  <input id="username" size="40" placeholder="Enter your name">
+  <button class="primary" onclick="startDemo()">Start Demo</button>
+
+  <script>
+    function startDemo() {
+      const name = document.getElementById("username").value.trim();
+      if (!name) {
+        alert("Please enter your name");
+        return;
+      }
+
+      sessionStorage.setItem("user_name", name);
+      window.location.href = "/menu";  // redirect to the menu
+    }
+  </script>
 </body>
 </html>

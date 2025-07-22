@@ -4,15 +4,20 @@
   <title>Prompt Playground</title>
   <link rel="stylesheet" href="/static/style.css">
   <script>
-  async function sendPrompt() {
-    const res = await fetch("/api/play", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:document.getElementById('p').value})
-    });
-    const j = await res.json();
-    document.getElementById('out').innerText = j.response;
-  }
+    const userName = sessionStorage.getItem("user_name") || "anonymous";
+
+    async function sendPrompt() {
+      const res = await fetch("/api/play", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: document.getElementById('p').value,
+          user_name: userName
+        })
+      });
+      const j = await res.json();
+      document.getElementById('out').innerText = j.response;
+    }
   </script>
 </head>
 <body class="window">
