@@ -124,12 +124,27 @@ def chaos_ui(): return render_template("chaos.html")
 def security_ui(): return render_template("security.html")
 
 # API routes
+# @app.route("/api/play", methods=["POST"])
+# def play_api():
+#     data = request.get_json(silent=True) or {}
+#     prompt = data.get("prompt", "")
+#     answer = process_user_prompt(prompt)
+#     log.debug("Prompt=%s | Answer=%s", prompt, answer)
+#     return jsonify(response=answer)
 @app.route("/api/play", methods=["POST"])
 def play_api():
-    data = request.get_json(silent=True) or {}
-    prompt = data.get("prompt", "")
-    answer = process_user_prompt(prompt)
-    log.debug("Prompt=%s | Answer=%s", prompt, answer)
+    data     = request.get_json(silent=True) or {}
+    messages = data.get("messages", [])
+    if CHAOS_ON:
+        time.sleep(2 + random.random())
+
+    # auto‐traced LLM span still applies
+    resp = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        temperature=0.7,
+    )
+    answer = resp.choices[0].message.content
     return jsonify(response=answer)
 
 @app.route("/api/security", methods=["POST"])
