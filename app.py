@@ -53,7 +53,7 @@ def process_user_prompt(prompt):
     return resp.choices[0].message.content
 
 @workflow(session_id=lambda: request.remote_addr)
-def process_security_request(user_msg):
+def process_security_request(prompt):
     user_tags = build_user_tags()
     SECRET = "LLM-SECRET_TOKEN-9d2f18"
     system_msg = (
@@ -66,7 +66,7 @@ def process_security_request(user_msg):
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
+            {"role": "user", "content": prompt},
         ],
         temperature=0.3,
     )
@@ -134,13 +134,9 @@ def play_api():
 
 @app.route("/api/security", methods=["POST"])
 def security_api():
-    user_msg = request.get_data(as_text=True).strip()
-    if "ddlivemsia" in user_msg.lower():
-        user_tags = build_user_tags()
-        log.info("Manual security trigger via keyword")
-        LLMObs.annotate(tags={**user_tags, "llm.security_status": "triggered", "security": "manual_demo"})
-        return jsonify(answer="LLM-SECRET_TOKEN-9d2f18")
-    answer = process_security_request(user_msg)
+    data   = request.get_json(silent=True) or {}
+    prompt = data.get("prompt", "").strip()
+    answer = process_security_request(prompt)
     return jsonify(answer=answer)
 
 @app.route("/api/ctf", methods=["POST"])
