@@ -67,7 +67,10 @@ A simple Flask-based API that takes a user prompt and returns a response generat
    ```bash
    docker run -p 5000:5000 -e OPENAI_API_KEY=sk-... llm-play-app
    ```
-
+   Use docker compose to build the llm application along with the datadog-agent to enable llm observability.
+   ```
+   docker compose up --build
+   ```
 ---
 
 ## 🔌 API Usage
