@@ -508,6 +508,45 @@ Examples:
           return;
         }
         
+        // Handle 403 Forbidden - show actual response message
+        if (response.status === 403) {
+          try {
+            const errorResult = await response.json();
+            
+            // Check if it has the errors structure
+            if (errorResult.errors && Array.isArray(errorResult.errors)) {
+              const errorDetails = errorResult.errors.map(error => 
+                `<div><strong>${error.title || 'Access Denied'}:</strong> ${error.detail || 'No details provided'}</div>`
+              ).join('<br>');
+              
+              responseOutput.innerHTML = `
+                <div style="color: #fa709a; font-weight: bold; margin-bottom: 1rem;">
+                  🚫 Access Forbidden (403)
+                </div>
+                <div>${errorDetails}</div>
+              `;
+            } else {
+              // Show the raw response
+              responseOutput.innerHTML = `
+                <div style="color: #fa709a; font-weight: bold; margin-bottom: 1rem;">
+                  🚫 Access Forbidden (403)
+                </div>
+                <div>${JSON.stringify(errorResult, null, 2)}</div>
+              `;
+            }
+          } catch (e) {
+            // If JSON parsing fails, try to get text
+            const errorText = await response.text();
+            responseOutput.innerHTML = `
+              <div style="color: #fa709a; font-weight: bold; margin-bottom: 1rem;">
+                🚫 Access Forbidden (403)
+              </div>
+              <div>${errorText || 'Access denied - no additional information provided'}</div>
+            `;
+          }
+          return;
+        }
+        
         // Handle other non-200 status codes
         if (!response.ok) {
           responseOutput.innerHTML = `
