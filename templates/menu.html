@@ -1,23 +1,329 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>LLM Stage Menu</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Demo - Main Menu</title>
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .menu-container {
+      animation: fadeInScale 0.6s ease;
+    }
+    
+    @keyframes fadeInScale {
+      from { 
+        opacity: 0; 
+        transform: scale(0.95) translateY(20px); 
+      }
+      to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+      }
+    }
+    
+    .user-welcome {
+      background: var(--bg-tertiary);
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .user-welcome:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--success-gradient);
+      border-radius: 16px 16px 0 0;
+    }
+    
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      background: var(--primary-gradient);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin: 0 auto 1rem;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .user-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-accent);
+      margin-bottom: 0.5rem;
+    }
+    
+    .user-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+    
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .menu-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      min-height: 160px;
+    }
+    
+    .menu-item:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    
+    .menu-item:hover {
+      background: var(--bg-tertiary);
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+      border-color: rgba(102, 126, 234, 0.3);
+    }
+    
+    .menu-item:hover:before {
+      transform: scaleX(1);
+    }
+    
+    .menu-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      transition: transform 0.3s ease;
+    }
+    
+    .menu-item:hover .menu-icon {
+      transform: scale(1.1) rotate(5deg);
+    }
+    
+    .menu-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-accent);
+    }
+    
+    .menu-description {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin: 0;
+    }
+    
+    .menu-item.playground { --accent: var(--primary-gradient); }
+    .menu-item.ctf { --accent: var(--warning-gradient); }
+    .menu-item.chaos { --accent: var(--danger-gradient); }
+    .menu-item.security { --accent: var(--secondary-gradient); }
+    .menu-item.confidence { --accent: var(--success-gradient); }
+    
+    .menu-item.playground:before { background: var(--primary-gradient); }
+    .menu-item.ctf:before { background: var(--warning-gradient); }
+    .menu-item.chaos:before { background: var(--danger-gradient); }
+    .menu-item.security:before { background: var(--secondary-gradient); }
+    .menu-item.confidence:before { background: var(--success-gradient); }
+    
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+      padding: 1rem;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    .status-online {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #43e97b;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+    
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    @media (max-width: 768px) {
+      .menu-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .menu-item {
+        padding: 1.5rem;
+        min-height: 140px;
+      }
+      
+      .status-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
-<body class="window">
-  <h1>Welcome to the LLM Demo</h1>
-  <p><strong>User:</strong> <span id="userDisplay"></span></p>
+<body>
+  <div class="window menu-container">
+    <h1>🎮 LLM Demo Hub</h1>
+    
+    <div class="user-welcome">
+      <div class="user-avatar">
+        <span id="userAvatar">👤</span>
+      </div>
+      <div class="user-name">Welcome, <span id="userDisplay">User</span>!</div>
+      <div class="user-subtitle">Choose your AI adventure below</div>
+    </div>
 
-  <ul>
-    <li><a href="/play">Prompt Playground</a></li>
-    <li><a href="/ctf">Guardrail CTF</a></li>
-    <li><a href="/chaos">Latency Chaos Button</a></li>
-    <li><a href="/security">LLM Security Drill</a></li>
-  </ul>
+    <div class="menu-grid">
+      <a href="/play" class="menu-item playground">
+        <div class="menu-icon">💬</div>
+        <div class="menu-title">Prompt Playground</div>
+        <p class="menu-description">Experiment with free-form AI conversations and explore creative prompting</p>
+      </a>
+      
+      <a href="/ctf" class="menu-item ctf">
+        <div class="menu-icon">🏆</div>
+        <div class="menu-title">Guardrail CTF</div>
+        <p class="menu-description">Challenge AI safety measures in this capture-the-flag style game</p>
+      </a>
+      
+      <a href="/chaos" class="menu-item chaos">
+        <div class="menu-icon">⚡</div>
+        <div class="menu-title">Latency Chaos</div>
+        <p class="menu-description">Test system resilience with intentional performance disruptions</p>
+      </a>
+      
+      <a href="/security" class="menu-item security">
+        <div class="menu-icon">🔒</div>
+        <div class="menu-title">Security Drill</div>
+        <p class="menu-description">Explore LLM security vulnerabilities and protection mechanisms</p>
+      </a>
+      
+
+    </div>
+    
+    <div class="status-bar">
+      <div class="status-online">
+        <div class="status-dot"></div>
+        <span>System Online</span>
+      </div>
+      <div>4 Experiences Available</div>
+      <div id="currentTime"></div>
+    </div>
+  </div>
 
   <script>
-    const userName = sessionStorage.getItem("user_name") || "anonymous";
+    // Enhanced user display
+    const userName = sessionStorage.getItem("user_name") || "Anonymous";
     document.getElementById("userDisplay").textContent = userName;
+    
+    // Generate user avatar based on name
+    const userAvatar = document.getElementById("userAvatar");
+    if (userName && userName !== "Anonymous") {
+      userAvatar.textContent = userName.charAt(0).toUpperCase();
+    }
+    
+    // Update current time
+    function updateTime() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      document.getElementById("currentTime").textContent = timeString;
+    }
+    
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Add entrance animations to menu items
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach((item, index) => {
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        item.style.transition = 'all 0.5s ease';
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+      }, 200 + (index * 100));
+    });
+    
+    // Add click feedback
+    menuItems.forEach(item => {
+      item.addEventListener('click', function(e) {
+        // Create ripple effect
+        const ripple = document.createElement('div');
+        ripple.style.position = 'absolute';
+        ripple.style.borderRadius = '50%';
+        ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.animation = 'ripple 0.6s linear';
+        ripple.style.left = e.offsetX + 'px';
+        ripple.style.top = e.offsetY + 'px';
+        ripple.style.width = ripple.style.height = '40px';
+        ripple.style.marginLeft = ripple.style.marginTop = '-20px';
+        
+        this.appendChild(ripple);
+        
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      });
+    });
+    
+    // Add ripple animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes ripple {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
   </script>
 </body>
 </html>

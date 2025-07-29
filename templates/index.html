@@ -1,27 +1,236 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>LLM Stage Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Stage Demo - Welcome</title>
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .welcome-container {
+      text-align: center;
+      animation: fadeIn 0.8s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .logo {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .form-group {
+      margin-bottom: 2rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .name-input {
+      font-size: 1.1rem;
+      padding: 1rem 1.5rem;
+      border-radius: 16px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      transition: all 0.3s ease;
+      max-width: 400px;
+      margin: 0 auto;
+      display: block;
+    }
+    
+    .name-input:focus {
+      border-color: #667eea;
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+    }
+    
+    .start-button {
+      font-size: 1.1rem;
+      padding: 1rem 2.5rem;
+      margin-top: 1rem;
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .start-button:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-xl);
+    }
+    
+    .start-button:active {
+      transform: translateY(-1px);
+    }
+    
+    .features {
+      margin-top: 3rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .feature {
+      background: var(--bg-tertiary);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    
+    .feature:hover {
+      transform: translateY(-2px);
+    }
+    
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .feature-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+  </style>
 </head>
-<body class="window">
-  <h1>LLM Stage Demo</h1>
-
-  <h2>Start Demo</h2>
-  <input id="username" size="40" placeholder="Enter your name">
-  <button class="primary" onclick="startDemo()">Start Demo</button>
+<body>
+  <div class="window welcome-container">
+    <div class="logo">🚀</div>
+    <h1>LLM Stage Demo</h1>
+    <p class="subtitle">
+      Explore the power of Large Language Models with our interactive demo platform. 
+      Experience cutting-edge AI capabilities with beautiful interfaces.
+    </p>
+    
+    <div class="form-group">
+      <label for="username">What's your name?</label>
+      <input 
+        id="username" 
+        class="name-input"
+        type="text" 
+        placeholder="Enter your name to get started" 
+        maxlength="50"
+        autocomplete="name"
+      >
+    </div>
+    
+    <button class="start-button" onclick="startDemo()">
+      🎯 Start Your Journey
+    </button>
+    
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">💬</div>
+        <div class="feature-title">Interactive Chat</div>
+        <p class="feature-desc">Real-time conversations with AI</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Security Testing</div>
+        <p class="feature-desc">Explore AI safety measures</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Confidence Rating</div>
+        <p class="feature-desc">AI responses with certainty levels</p>
+      </div>
+    </div>
+  </div>
 
   <script>
+    // Enhanced form handling
+    const usernameInput = document.getElementById("username");
+    const startButton = document.querySelector(".start-button");
+    
+    // Add real-time validation
+    usernameInput.addEventListener("input", function() {
+      const name = this.value.trim();
+      if (name.length > 0) {
+        startButton.style.opacity = "1";
+        startButton.style.transform = "scale(1)";
+      } else {
+        startButton.style.opacity = "0.7";
+        startButton.style.transform = "scale(0.98)";
+      }
+    });
+    
+    // Handle Enter key
+    usernameInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        startDemo();
+      }
+    });
+    
+    // Enhanced start demo function
     function startDemo() {
-      const name = document.getElementById("username").value.trim();
+      const name = usernameInput.value.trim();
+      
       if (!name) {
-        alert("Please enter your name");
+        // Beautiful error handling
+        usernameInput.style.borderColor = "#fa709a";
+        usernameInput.style.boxShadow = "0 0 10px rgba(250, 112, 154, 0.3)";
+        usernameInput.placeholder = "Please enter your name first!";
+        usernameInput.focus();
+        
+        setTimeout(() => {
+          usernameInput.style.borderColor = "var(--border-color)";
+          usernameInput.style.boxShadow = "none";
+          usernameInput.placeholder = "Enter your name to get started";
+        }, 3000);
+        
         return;
       }
-
+      
+      // Add loading state
+      startButton.innerHTML = '<div class="loading"></div> Starting...';
+      startButton.disabled = true;
+      
+      // Save name and redirect
       sessionStorage.setItem("user_name", name);
-      window.location.href = "/menu";  // redirect to the menu
+      
+      setTimeout(() => {
+        window.location.href = "/menu";
+      }, 1000);
     }
+    
+    // Initialize
+    usernameInput.focus();
   </script>
 </body>
 </html>
