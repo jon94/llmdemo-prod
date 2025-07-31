@@ -4,6 +4,7 @@ ddtrace==3.10.2
 python-dotenv>=1.0
 gunicorn>=22.0
 python-json-logger>=3.3.0
+requests>=2.25.0
 # LangChain for RAG (minimal dependencies)
 langchain>=0.1.0
 langchain-openai>=0.1.0

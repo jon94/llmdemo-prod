@@ -8,6 +8,8 @@ OPENAI_API_KEY=sk-proj-xxxxxx
 
 # Datadog API Key - required for monitoring and tracing
 DD_API_KEY=xxxxxxxx
+# Datadog APP Key - required for aiguard
+DD_APP_KEY=xxxxxxx
 ```
 ```
 docker compose build --no-cache --pull
