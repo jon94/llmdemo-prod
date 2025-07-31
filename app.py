@@ -8,6 +8,7 @@ from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.decorators import workflow
 from ddtrace.llmobs.utils import Prompt
 from pythonjsonlogger import jsonlogger
+import requests
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
