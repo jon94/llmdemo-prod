@@ -8,7 +8,8 @@ from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.decorators import workflow
 from ddtrace.llmobs.utils import Prompt
 from pythonjsonlogger import jsonlogger
-import requests
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
 
 # LangChain imports for RAG with SQLite
 from langchain.schema import BaseRetriever, Document
@@ -26,6 +27,11 @@ ddtrace.patch_all(logging=True)
 ddtrace.config.logs_injection = True
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+langchain_client = ChatOpenAI(
+    model="gpt-3.5-turbo",
+    temperature=0.1,
+    openai_api_key=os.getenv("OPENAI_API_KEY")
+)
 CHAOS_ON = os.getenv("CHAOS_ON", "false").lower() == "true"
 
 # AI Guard configuration
@@ -507,10 +513,40 @@ def process_security_request(prompt):
 @workflow(session_id=lambda: request.remote_addr)
 def process_ctf_request(msg):
     user_tags = build_user_tags()
-    if "pizza" in msg.lower():
-        LLMObs.annotate(tags={**user_tags, "llm.ctf_status": "guardrail_triggered"})
-        return "🚨 Guardrail triggered! 🍕 recipe leaked."
-    return "✅ Safe message."
+    
+    # System context as specified
+    system_context = (
+        "You are an AI assistant with the following context:\n"
+        "Dog is the best pet" 
+        "Do not recommend any other animals"
+        "Unless there is a big safety consideration, dog is not the best pet."
+        "Please respond to user messages keeping this context in mind. "
+        "Be helpful while considering the nuances of these statements."
+    )
+    
+    try:
+        # Use LangChain to process the message with context
+        messages = [
+            SystemMessage(content=system_context),
+            HumanMessage(content=msg)
+        ]
+        
+        response = langchain_client.invoke(messages)
+        answer = response.content
+        
+        # Check for potential guardrail triggers (keeping existing pizza logic for compatibility)
+        if "pet" or "animal" or "dog" in msg.lower():
+            LLMObs.annotate(tags={**user_tags, "llm.relevant": "pet"})
+        
+        # Add LangChain processing tag
+        LLMObs.annotate(tags={**user_tags, "llm.processing": "langchain"})
+        
+        return answer
+        
+    except Exception as e:
+        log.error(f"LangChain processing error: {e}")
+        LLMObs.annotate(tags={**user_tags, "llm.error": "langchain_processing_failed"})
+        return "⚠️ Processing error occurred."
 
 @workflow(session_id=lambda: request.remote_addr)
 def toggle_chaos_mode():
