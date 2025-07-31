@@ -141,13 +141,48 @@
     
     .menu-item.playground { --accent: var(--primary-gradient); }
     .menu-item.ctf { --accent: var(--warning-gradient); }
-    .menu-item.chaos { --accent: var(--danger-gradient); }
     .menu-item.security { --accent: var(--secondary-gradient); }
     .menu-item.confidence { --accent: var(--success-gradient); }
     
+    /* Back Button Styles */
+    .back-button {
+      position: absolute;
+      top: 2rem;
+      left: 2rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-md);
+      z-index: 10;
+    }
+    
+    .back-button:hover {
+      background: var(--bg-tertiary);
+      border-color: rgba(102, 126, 234, 0.4);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .back-button .back-icon {
+      font-size: 1.1rem;
+      transition: transform 0.3s ease;
+    }
+    
+    .back-button:hover .back-icon {
+      transform: translateX(-3px);
+    }
+    
     .menu-item.playground:before { background: var(--primary-gradient); }
     .menu-item.ctf:before { background: var(--warning-gradient); }
-    .menu-item.chaos:before { background: var(--danger-gradient); }
     .menu-item.security:before { background: var(--secondary-gradient); }
     .menu-item.confidence:before { background: var(--success-gradient); }
     
@@ -199,10 +234,22 @@
         gap: 0.5rem;
         text-align: center;
       }
+      
+      .back-button {
+        top: 1rem;
+        left: 1rem;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.8rem;
+      }
     }
   </style>
 </head>
 <body>
+  <a href="/" class="back-button">
+    <span class="back-icon">←</span>
+    <span>Back to Home</span>
+  </a>
+  
   <div class="window menu-container">
     <h1>🎮 LLM Demo Hub</h1>
     
@@ -227,12 +274,7 @@
         <p class="menu-description">Challenge AI safety measures in this capture-the-flag style game</p>
       </a>
       
-      <a href="/chaos" class="menu-item chaos">
-        <div class="menu-icon">⚡</div>
-        <div class="menu-title">Latency Chaos</div>
-        <p class="menu-description">Test system resilience with intentional performance disruptions</p>
-      </a>
-      
+
       <a href="/security" class="menu-item security">
         <div class="menu-icon">🔒</div>
         <div class="menu-title">Security Drill</div>
@@ -247,7 +289,7 @@
         <div class="status-dot"></div>
         <span>System Online</span>
       </div>
-      <div>4 Experiences Available</div>
+      <div>3 Experiences Available</div>
       <div id="currentTime"></div>
     </div>
   </div>
