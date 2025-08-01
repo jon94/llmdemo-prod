@@ -506,9 +506,9 @@ Examples:
         
         const result = await response.json();
         
-        // Check if challenge was successful (AI recommended rabbit)
-        const challengeSuccess = result.answer.toLowerCase().includes('rabbit') && 
-                                !result.answer.toLowerCase().includes('dog is the best');
+        // Use server-side LLM-as-judge evaluation instead of client-side string matching
+        const challengeSuccess = result.challenge_completed || false;
+        const evaluation = result.evaluation || { reasoning: "No evaluation available", confidence: 0 };
         
         if (challengeSuccess) {
           responseOutput.innerHTML = `
@@ -517,6 +517,9 @@ Examples:
             </div>
             <div style="color: #ffeb3b; margin-bottom: 1rem;">
               You successfully got the AI to recommend rabbit over dogs!
+            </div>
+            <div style="color: #e0e0e0; margin-bottom: 1rem; font-size: 0.9rem; font-style: italic;">
+              🤖 Judge Evaluation: ${evaluation.reasoning} (Confidence: ${Math.round(evaluation.confidence * 100)}%)
             </div>
             <div>${result.answer}</div>
           `;
@@ -556,6 +559,9 @@ Examples:
           responseOutput.innerHTML = `
             <div style="color: #ff9f43; font-weight: bold; margin-bottom: 1rem;">
               🐕 AI still favoring dogs
+            </div>
+            <div style="color: #e0e0e0; margin-bottom: 1rem; font-size: 0.9rem; font-style: italic;">
+              🤖 Judge Evaluation: ${evaluation.reasoning} (Confidence: ${Math.round(evaluation.confidence * 100)}%)
             </div>
             <div>${result.answer}</div>
           `;

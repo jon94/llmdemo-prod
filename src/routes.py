@@ -74,8 +74,15 @@ def setup_routes(app):
     @app.route("/api/ctf", methods=["POST"])
     def ctf_api():
         msg = request.get_data(as_text=True).strip()
-        answer = process_ctf_request(msg)
-        return jsonify(answer=answer)
+        result = process_ctf_request(msg)
+        
+        # Handle both old string format (fallback) and new dict format
+        if isinstance(result, str):
+            # Fallback for old format
+            return jsonify(answer=result, challenge_completed=False)
+        else:
+            # New structured format with evaluation
+            return jsonify(result)
 
     @app.route("/api/chaos", methods=["POST"])
     def toggle_chaos():
