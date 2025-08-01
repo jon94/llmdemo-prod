@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: .
@@ -29,7 +27,7 @@ services:
       - DD_REMOTE_CONFIGURATION_REFRESH_INTERVAL=5s
       
       # AI Guard Configuration (src/ai_guard.py)
-      - AI_GUARD_ENABLED=true
+      - AI_GUARD_ENABLED=false
       - DD_API_KEY=${DD_API_KEY}
       - DD_APP_KEY=${DD_APP_KEY}
       

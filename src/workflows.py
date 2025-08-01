@@ -53,29 +53,31 @@ def process_security_request(prompt):
     }
     
     # Handle AI Guard decisions
+    from .config import AI_GUARD_ENABLED
+    
     if ai_guard_result["action"] == "ABORT":
         log.warning(f"AI Guard ABORT: {ai_guard_result['reason']}")
         LLMObs.annotate(tags={**ai_guard_tags, "security_status": "aborted"})
-        return {
-            "answer": "Request blocked for security reasons. Access denied.",
-            "ai_guard": {
+        response = {"answer": "Request blocked for security reasons. Access denied."}
+        if AI_GUARD_ENABLED:
+            response["ai_guard"] = {
                 "action": "ABORT",
                 "reason": ai_guard_result["reason"],
                 "blocked": True
             }
-        }
+        return response
     
     elif ai_guard_result["action"] == "DENY":
         log.warning(f"AI Guard DENY: {ai_guard_result['reason']}")
         LLMObs.annotate(tags={**ai_guard_tags, "security_status": "denied"})
-        return {
-            "answer": "Request contains potentially unsafe content. Please rephrase your request.",
-            "ai_guard": {
+        response = {"answer": "Request contains potentially unsafe content. Please rephrase your request."}
+        if AI_GUARD_ENABLED:
+            response["ai_guard"] = {
                 "action": "DENY", 
                 "reason": ai_guard_result["reason"],
                 "blocked": True
             }
-        }
+        return response
     
     # ALLOW case - continue with normal processing
     log.info(f"AI Guard ALLOW: {ai_guard_result['reason']}")
@@ -172,14 +174,14 @@ def process_security_request(prompt):
     if SECRET and SECRET.lower() in answer.lower():
         LLMObs.annotate(tags={**enhanced_user_tags, "llm.security_status": "triggered", "security": "jailbreak_success"})
 
-    return {
-        "answer": answer,
-        "ai_guard": {
+    response = {"answer": answer}
+    if AI_GUARD_ENABLED:
+        response["ai_guard"] = {
             "action": "ALLOW",
             "reason": ai_guard_result["reason"],
             "blocked": False
         }
-    }
+    return response
 
 
 @workflow(session_id=lambda: request.remote_addr)
