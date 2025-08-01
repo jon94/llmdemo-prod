@@ -13,7 +13,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DD_LOGS_INJECTION=true \
     DD_VERSION=1.0.0
 
-
 # Set working directory
 WORKDIR /app
 
@@ -23,15 +22,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# Copy and install Python dependencies first (for better Docker layer caching)
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy modular source code structure
+# Main application entry point
+COPY app.py .
+
+# Modular source code
+COPY src/ src/
+
+# Templates and static files
+COPY templates/ templates/
+COPY static/ static/
+
+# Copy any additional configuration files
+COPY *.yml *.yaml *.json *.env* ./
+
+# Create directory for SQLite database (optional - SQLite will create if needed)
+RUN mkdir -p data
 
 # Expose the Flask/Gunicorn port
 EXPOSE 5000
+
+# Health check for the modular Flask app
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/menu || exit 1
 
 # Use Gunicorn with Datadog tracing
 CMD ["ddtrace-run", "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]

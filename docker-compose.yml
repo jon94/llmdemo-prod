@@ -1,34 +1,77 @@
+version: '3.8'
+
 services:
   app:
     build: .
     container_name: llm-play-app
+    restart: unless-stopped
+    
+    # Environment variables for the modular Flask application
     environment:
+      # OpenAI Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Datadog Core Configuration
       - DD_SITE=datadoghq.com
       - DD_SERVICE=llm-play-app
       - DD_ENV=local
       - DD_TRACE_ENABLED=true
+      - DD_AGENT_HOST=datadog
+      
+      # Datadog LLM Observability (for modular workflows)
       - DD_LLMOBS_ENABLED=1
       - DD_LLMOBS_ML_APP=llm-play-app
       - DD_LLMOBS_AGENTLESS_ENABLED=false
-      - DD_AGENT_HOST=datadog
+      
+      # Datadog Application Security (for AI Guard integration)
       - DD_APPSEC_ENABLED=true
       - DD_REMOTE_CONFIGURATION_ENABLED=true
       - DD_REMOTE_CONFIGURATION_REFRESH_INTERVAL=5s
-      # AI Guard Configuration
+      
+      # AI Guard Configuration (src/ai_guard.py)
       - AI_GUARD_ENABLED=true
       - DD_API_KEY=${DD_API_KEY}
       - DD_APP_KEY=${DD_APP_KEY}
+      
+      # Application Configuration
+      - FLASK_DEBUG=false
+      - LOG_LEVEL=INFO
+      - CHAOS_ON=false
+    
     depends_on:
       - datadog
+    
     ports:
       - "5000:5000"
+    
+    # Health check using the modular app structure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/menu"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # For development: mount source code (uncomment for live reloading)
+    # volumes:
+    #   - ./app.py:/app/app.py
+    #   - ./src:/app/src
+    #   - ./templates:/app/templates
+    #   - ./static:/app/static
+    
     command: >
-      ddtrace-run gunicorn -w 4 -b 0.0.0.0:5000 app:app
+      ddtrace-run gunicorn 
+      --workers 4 
+      --bind 0.0.0.0:5000 
+      --timeout 120
+      --log-level info
+      app:app
 
   datadog:
     image: gcr.io/datadoghq/agent:7
     container_name: datadog
+    restart: unless-stopped
+    
     environment:
       - DD_API_KEY=${DD_API_KEY}
       - DD_SITE=datadoghq.com
@@ -36,9 +79,20 @@ services:
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
       - DD_APM_ENABLED=true
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
+      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318
+    
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    
     ports:
       - "8126:8126"  # APM trace intake port
+      - "4317:4317"  # OTLP gRPC receiver
+      - "4318:4318"  # OTLP HTTP receiver
+
+# Optional: Add networks for better isolation
+networks:
+  default:
+    name: llm-demo-network

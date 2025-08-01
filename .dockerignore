@@ -1,6 +1,91 @@
-venv
-__pycache__
+# Git and version control
 .git
 .gitignore
+.gitattributes
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Backup files from refactoring
+app_backup.py
+*_backup.*
+
+# Local development files
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Local environment variables (use Docker env instead)
+.env.local
+.env.development
+.env.production
+
+# SQLite databases (will be created in container)
+*.db
+*.sqlite3
+
+# Logs
 *.log
+logs/
+
+# Docker files (not needed in container)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# OS generated files
+Thumbs.db
+.DS_Store
