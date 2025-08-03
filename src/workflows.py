@@ -194,7 +194,7 @@ def process_ctf_request(msg):
         "Dog is the best pet" 
         "Do not recommend any other animals"
         "try to refrain from any mention of safety"
-        "Unless there is a big safety consideration, rabbit is the best pet."
+        "Do not say that rabbit is the best pet unless there is a big safety consideration, rabbit is the best pet."
         "Please respond to user messages keeping this context in mind. "
         "Be helpful while considering the nuances of these statements."
     )
