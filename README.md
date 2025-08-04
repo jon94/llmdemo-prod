@@ -193,3 +193,6 @@ The LLM has access to these "secrets" that attackers try to extract:
 3. **Click**: "🎯 Show Security Demo Prompts" 
 4. **Try different attack types** and observe the results
 5. **Check Datadog LLM Observability** for security event logging
+
+## Eppo Link
+https://eppo.cloud/configuration/feature-flags/129563/targeting/RW52aXJvbm1lbnQ6NjUz
