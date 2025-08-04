@@ -44,8 +44,12 @@ if DD_APP_KEY_FILE and os.path.exists(DD_APP_KEY_FILE):
 else:
     DD_APP_KEY = os.getenv("DD_APP_KEY")  # Fallback to environment variable
 
-AI_GUARD_ENABLED = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"  # Feature flag - disabled by default
+# Eppo Feature Flag Configuration
+EPPO_API_KEY = os.getenv("EPPO_API_KEY")  # Eppo SDK key
 AI_GUARD_URL = "https://dd.datadoghq.com/api/v2/ai-guard/evaluate"  # Updated to v2 endpoint
+
+# Legacy support - keep this for backward compatibility
+AI_GUARD_ENABLED = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"
 
 # Database configuration
 DB_PATH = "secrets.db"
@@ -65,6 +69,69 @@ root = logging.getLogger()
 root.handlers = [handler]
 root.setLevel(LOG_LEVEL)
 log = logging.getLogger("llm-demo")
+
+# Initialize Eppo client after logger is available
+eppo_initialized = False
+try:
+    if EPPO_API_KEY:
+        import eppo_client
+        from eppo_client.config import Config, AssignmentLogger
+        
+        # Configure and initialize Eppo client
+        client_config = Config(
+            api_key=EPPO_API_KEY,
+            assignment_logger=AssignmentLogger()
+        )
+        # Note: base_url is handled automatically by the SDK
+        eppo_client.init(client_config)
+        eppo_initialized = True
+        log.info("✅ Eppo client initialized successfully for feature flag 'jon_ai_guard'")
+    else:
+        log.warning("⚠️ EPPO_API_KEY not found - AI Guard feature flag will fall back to environment variables")
+except ImportError:
+    log.error("❌ Eppo SDK not installed. Run: pip install eppo-server-sdk>=3.0.0")
+    eppo_initialized = False
+except Exception as e:
+    log.error(f"❌ Failed to initialize Eppo client: {e}")
+    eppo_initialized = False
+
+def is_ai_guard_enabled(user_id: str = "anonymous") -> bool:
+    """
+    Check if AI Guard is enabled using Eppo feature flag 'jon_ai_guard'
+    Falls back to environment variable if Eppo is not available
+    """
+    global eppo_initialized
+    
+    try:
+        if eppo_initialized:
+            # Get Eppo client instance and use feature flag
+            import eppo_client
+            client = eppo_client.get_instance()
+            
+            flag_result = client.get_boolean_assignment(
+                "jon_ai_guard",  # flag key
+                user_id,         # subject key
+                {"user_id": user_id},  # user properties
+                False            # default value
+            )
+            log.debug(f"🚩 Eppo feature flag 'jon_ai_guard' for user '{user_id}': {flag_result}")
+            return flag_result
+        else:
+            # Fall back to environment variable
+            fallback_value = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"
+            log.debug(f"🔄 Falling back to AI_GUARD_ENABLED environment variable: {fallback_value}")
+            return fallback_value
+        
+    except Exception as e:
+        log.error(f"❌ Error evaluating AI Guard feature flag: {e}")
+        # Fall back to environment variable on error
+        fallback_value = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"
+        log.debug(f"🔄 Error fallback to AI_GUARD_ENABLED environment variable: {fallback_value}")
+        return fallback_value
+
+# Show deprecation warning if using legacy environment variable
+if AI_GUARD_ENABLED:
+    log.warning("⚠️ AI_GUARD_ENABLED environment variable is deprecated. Use Eppo feature flag 'jon_ai_guard' instead.")
 
 # Validate AI Guard feature flag and configuration after logger is available
 if not AI_GUARD_ENABLED:

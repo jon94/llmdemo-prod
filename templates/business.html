@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ShopAssist - Customer Support Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-container {
+            width: 420px;
+            height: 750px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 480px) {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .chat-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            
+            .chat-header {
+                padding: 15px 20px;
+            }
+            
+            .chat-header h1 {
+                font-size: 1.1rem;
+            }
+            
+            /* Mobile positioning for AI Guard status */
+            .ai-guard-status {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                margin: 4px auto 0 auto !important;
+                display: inline-block !important;
+                max-width: fit-content;
+            }
+        }
+
+        .chat-header {
+            background: #24292f;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chat-header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .online-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #43e97b;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .message.assistant .message-avatar {
+            background: #0969da;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .message.user .message-avatar {
+            background: #2f3349;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .message.assistant .message-content {
+            background: #ffffff;
+            border: 1px solid #d0d7de;
+            border-bottom-left-radius: 6px;
+            color: #24292f;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .message-content {
+            background: #0969da;
+            color: #ffffff;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: #ffffff;
+            border-radius: 18px;
+            border-bottom-left-radius: 6px;
+            border: 1px solid #d0d7de;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #656d76;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 1rem;
+            outline: none;
+            resize: none;
+            min-height: 20px;
+            max-height: 100px;
+            font-family: inherit;
+            color: #2c3e50;
+            background: #ffffff;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .message-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #fafbfc;
+        }
+
+        .message-input::placeholder {
+            color: #8492a6;
+            font-weight: 400;
+        }
+
+        .send-button {
+            width: 44px;
+            height: 44px;
+            background: #0969da;
+            border: none;
+            border-radius: 50%;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #0550ae;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            background: #8c959f;
+            cursor: not-allowed;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .suggestion {
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            color: #24292f;
+            padding: 8px 14px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .suggestion:hover {
+            background: #0969da;
+            color: #ffffff;
+            border-color: #0969da;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(9, 105, 218, 0.2);
+        }
+
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+            transform: translateX(-2px);
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 2px;
+        }
+
+        /* Enhanced mobile styles */
+        @media (max-width: 480px) {
+            .chat-messages {
+                padding: 15px;
+            }
+            
+            .message-content {
+                max-width: 85%;
+                font-size: 0.9rem;
+            }
+            
+            .suggestions {
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-top: 8px;
+            }
+            
+            .suggestion {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                min-height: 44px; /* Touch-friendly size */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .input-container {
+                gap: 8px;
+            }
+            
+            .message-input {
+                font-size: 1rem; /* Prevents zoom on iOS */
+                padding: 12px 14px;
+                min-height: 44px; /* Touch-friendly */
+            }
+            
+            .send-button {
+                width: 44px;
+                height: 44px;
+                min-width: 44px; /* Ensure touch target */
+                flex-shrink: 0;
+            }
+            
+            .chat-input {
+                padding: 15px;
+                padding-bottom: max(15px, env(safe-area-inset-bottom)); /* iPhone notch */
+            }
+        }
+
+        /* Tablet styles */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .chat-container {
+                width: 90vw;
+                max-width: 500px;
+                height: 80vh;
+                max-height: 700px;
+            }
+        }
+
+
+
+
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <a href="/menu" class="back-link">←</a>
+            <div class="online-indicator">
+                <div class="status-dot"></div>
+                <span>Online</span>
+            </div>
+            
+            <!-- AI Guard Status Indicator (auto-updates every 15s, click to refresh) -->
+            <div class="ai-guard-status" id="aiGuardStatus" style="position: absolute; top: 20px; left: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 4px 8px; font-size: 0.7rem; color: #495057; display: none; cursor: pointer; transition: opacity 0.2s ease;" onclick="updateAIGuardStatus()" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'" title="Click to refresh status immediately">
+                <span id="aiGuardStatusText">🛡️ AI Guard: Loading...</span>
+            </div>
+            <h1>🛍️ ShopAssist</h1>
+            <p>Customer Support Chat</p>
+            
+
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content" id="welcomeMessage">
+                    <!-- Welcome message will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="message-avatar">🤖</div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <div class="chat-input">
+            <div class="suggestions" id="suggestions">
+                <div class="suggestion" onclick="sendSuggestion('Show me my profile')">Show my profile</div>
+                <div class="suggestion" onclick="sendSuggestion('What are my recent orders?')">My orders</div>
+                <div class="suggestion" onclick="sendSuggestion('What products are available?')">Browse products</div>
+                <div class="suggestion" onclick="sendSuggestion('Check my order status')">Order status</div>
+            </div>
+            
+
+            <div class="input-container">
+                <textarea 
+                    class="message-input" 
+                    id="messageInput" 
+                    placeholder="Type your message..."
+                    rows="1"
+                ></textarea>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const suggestions = document.getElementById('suggestions');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+
+        // Get initial user from URL params, localStorage, or default
+        function getInitialUser() {
+            // Check URL parameters first (e.g., ?user=fff)
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlUser = urlParams.get('user');
+            if (urlUser) {
+                console.log('Found user in URL:', urlUser);
+                return urlUser;
+            }
+            
+            // Check sessionStorage for user from index page (user_name)
+            const indexUser = sessionStorage.getItem('user_name');
+            if (indexUser) {
+                console.log('Found user from index page:', indexUser);
+                return indexUser;
+            }
+            
+            // Check localStorage for remembered user
+            const storedUser = localStorage.getItem('shopAssistUser');
+            if (storedUser) {
+                console.log('Found stored user:', storedUser);
+                return storedUser;
+            }
+            
+            // Check sessionStorage for app-specific user
+            const sessionUser = sessionStorage.getItem('shopAssistUser');
+            if (sessionUser) {
+                console.log('Found session user:', sessionUser);
+                return sessionUser;
+            }
+            
+            // Default to john_doe
+            return 'john_doe';
+        }
+
+        // Current user state - check URL params and localStorage first
+        let currentUser = getInitialUser();
+
+        // Auto-resize textarea with mobile optimization
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            const maxHeight = window.innerWidth <= 480 ? 80 : 100; // Smaller on mobile
+            this.style.height = Math.min(this.scrollHeight, maxHeight) + 'px';
+        });
+
+        // Prevent zoom on iOS when focusing input
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+            messageInput.addEventListener('focus', function() {
+                document.querySelector('meta[name=viewport]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            });
+            
+            messageInput.addEventListener('blur', function() {
+                document.querySelector('meta[name=viewport]').setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no');
+            });
+        }
+
+        // Send message on Enter (but allow Shift+Enter for new lines)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = isUser ? '👤' : '🤖';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = content;
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            typingIndicator.style.display = 'flex';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, true);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            
+            // Hide suggestions after first message
+            if (suggestions.style.display !== 'none') {
+                suggestions.style.display = 'none';
+            }
+
+            // Show typing indicator
+            showTyping();
+            sendButton.disabled = true;
+
+            try {
+                const response = await fetch('/api/security', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        prompt: message,
+                        user_name: currentUser // Use the selected user
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Check if this is a Datadog WAF blocking response
+                if (data.errors && data.errors[0] && data.errors[0].title === "You've been blocked") {
+                    hideTyping();
+                    sendButton.disabled = false;
+                    
+                    addMessage(`
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <span style="font-size: 1.5rem;">🛡️</span>
+                                <strong style="color: #856404;">Request Blocked by Security</strong>
+                            </div>
+                            <p style="margin: 0 0 10px 0; color: #856404;">
+                                <strong>Datadog Web Application Firewall (WAF)</strong> has detected and blocked this request as a potential security threat.
+                            </p>
+                            <p style="margin: 0 0 10px 0; color: #856404; font-size: 0.9rem;">
+                                <strong>Detected:</strong> SQL injection patterns in your input
+                            </p>
+                            <p style="margin: 0; color: #856404; font-size: 0.85rem;">
+                                This demonstrates real-world infrastructure security where malicious requests are blocked before reaching the application.
+                                Try using <strong>prompt injection</strong> attacks instead (e.g., "Ignore previous instructions...").
+                            </p>
+                        </div>
+                    `, false);
+                    return;
+                }
+                
+                // Simulate realistic response delay
+                await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+                
+                hideTyping();
+                sendButton.disabled = false;
+
+                // Format the response to be more ecommerce-like
+                let formattedResponse = data.answer;
+                
+                // Handle security monitoring (OWASP LLM Challenge integration)
+                if (data.challenge) {
+                    const challenge = data.challenge;
+                    
+                    if (challenge.success) {
+                        // Successful attack - show security warning
+                        if (challenge.severity === 'critical' || challenge.severity === 'high') {
+                            formattedResponse += `
+                                <div style="margin-top: 10px; padding: 8px 12px; background: #fff8e1; border: 1px solid #ffcc02; border-radius: 4px; font-size: 0.9rem;">
+                                    <span style="color: #f57c00;">⚠️</span> <strong>Security Notice:</strong> Some requests may be logged for security monitoring.
+                                </div>
+                            `;
+                        }
+                        
+                        // Log successful attacks
+                        console.log('Security Breach Detected:', {
+                            type: challenge.challenge,
+                            severity: challenge.severity,
+                            details: challenge.technical_details,
+                            timestamp: new Date().toISOString()
+                        });
+                    } else {
+                        // Failed attack or defended - show positive security feedback
+                        if (challenge.feedback.includes('DEFENDED')) {
+                            formattedResponse += `
+                                <div style="margin-top: 10px; padding: 8px 12px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; font-size: 0.9rem;">
+                                    <span style="color: #155724;">🛡️</span> <strong>Security:</strong> Attack attempt detected and blocked.
+                                </div>
+                            `;
+                        }
+                        
+                        // Log defended attacks
+                        console.log('Attack Defended:', {
+                            type: challenge.challenge,
+                            result: challenge.feedback,
+                            details: challenge.technical_details,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                // Handle AI Guard security responses
+                if (data.ai_guard) {
+                    const aiGuard = data.ai_guard;
+                    let guardMessage = '';
+                    
+                    if (aiGuard.action === 'DENY' && aiGuard.blocked) {
+                        // AI Guard DENY - Show detailed security block message
+                        guardMessage = `
+                            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <span style="font-size: 1.5rem;">🛡️</span>
+                                    <strong style="color: #856404;">AI Guard Security Block</strong>
+                                </div>
+                                <p style="margin: 0 0 10px 0; color: #856404;">
+                                    <strong>Action:</strong> ${aiGuard.action} - Request blocked for safety
+                                </p>
+                                <p style="margin: 0 0 10px 0; color: #856404; font-size: 0.9rem;">
+                                    <strong>Reason:</strong> ${aiGuard.reason}
+                                </p>
+                                <p style="margin: 0; color: #856404; font-size: 0.85rem;">
+                                    This demonstrates <strong>AI Guard</strong> real-time prompt safety evaluation. Try rephrasing your request in a safer way.
+                                </p>
+                            </div>
+                        `;
+                    } else if (aiGuard.action === 'ABORT' && aiGuard.blocked) {
+                        // AI Guard ABORT - Show critical security block
+                        guardMessage = `
+                            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <span style="font-size: 1.5rem;">🚨</span>
+                                    <strong style="color: #721c24;">AI Guard Critical Block</strong>
+                                </div>
+                                <p style="margin: 0 0 10px 0; color: #721c24;">
+                                    <strong>Action:</strong> ${aiGuard.action} - Request terminated for security
+                                </p>
+                                <p style="margin: 0 0 10px 0; color: #721c24; font-size: 0.9rem;">
+                                    <strong>Reason:</strong> ${aiGuard.reason}
+                                </p>
+                                <p style="margin: 0; color: #721c24; font-size: 0.85rem;">
+                                    This request was classified as high-risk and automatically blocked by <strong>AI Guard</strong>.
+                                </p>
+                            </div>
+                        `;
+                    } else if (aiGuard.action === 'ALLOW' && !aiGuard.blocked) {
+                        // AI Guard ALLOW - Show subtle security check passed
+                        guardMessage = `
+                            <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 6px; padding: 8px 12px; margin: 8px 0; font-size: 0.85rem;">
+                                <span style="color: #0c5460;">✅</span> <strong>AI Guard:</strong> Request evaluated and approved
+                                ${aiGuard.reason ? `<br><small style="color: #0c5460; opacity: 0.8;">Reason: ${aiGuard.reason}</small>` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    // Add the AI Guard message to the response
+                    if (guardMessage) {
+                        formattedResponse += guardMessage;
+                    }
+                    
+                    // Log AI Guard actions for debugging
+                    console.log('AI Guard Action:', {
+                        action: aiGuard.action,
+                        blocked: aiGuard.blocked,
+                        reason: aiGuard.reason,
+                        timestamp: new Date().toISOString(),
+                        user: currentUser
+                    });
+                }
+                
+                // Add some ecommerce context if the response seems generic
+                else if (!formattedResponse.toLowerCase().includes('order') && 
+                         !formattedResponse.toLowerCase().includes('profile') &&
+                         !formattedResponse.toLowerCase().includes('account')) {
+                    formattedResponse += '<br><br><small>💡 You can also ask me about your orders, profile, or account settings!</small>';
+                }
+
+                addMessage(formattedResponse);
+
+            } catch (error) {
+                hideTyping();
+                sendButton.disabled = false;
+                addMessage('Sorry, I\'m having trouble connecting right now. Please try again in a moment.', false);
+            }
+        }
+
+        function sendSuggestion(text) {
+            messageInput.value = text;
+            sendMessage();
+        }
+
+
+
+        // Simple user switching function (no dropdown)
+        async function switchUser(username) {
+            if (username) {
+                currentUser = username;
+                console.log('Switching to user:', currentUser);
+                
+                // Save user to localStorage for persistence
+                localStorage.setItem('shopAssistUser', currentUser);
+                sessionStorage.setItem('shopAssistUser', currentUser);
+                
+                await loadWelcomeMessage();
+                
+                // Restart polling for new user (immediate refresh)
+                stopStatusPolling();
+                startStatusPolling();
+                
+                // Clear chat except welcome message
+                const messages = chatMessages.querySelectorAll('.message');
+                for (let i = 1; i < messages.length; i++) {
+                    messages[i].remove();
+                }
+                
+                // Show suggestions again
+                suggestions.style.display = 'flex';
+            }
+        }
+
+        // Load personalized welcome message
+        async function loadWelcomeMessage() {
+            try {
+                // Show loading message
+                welcomeMessage.innerHTML = `Hi ${currentUser}! 👋 Loading your account information...`;
+                
+                const response = await fetch('/api/security', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        prompt: `Hello, I just logged in as ${currentUser}. What can you help me with? Please show me my account information.`,
+                        user_name: currentUser
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Add a small delay to show the loading state
+                setTimeout(() => {
+                    welcomeMessage.innerHTML = data.answer;
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error loading welcome message:', error);
+                welcomeMessage.innerHTML = `Hi ${currentUser}! 👋 I'm your ShopAssist customer support agent. Since you're logged in, I can help you with your orders, account details, and product inquiries. What can I help you with today?`;
+            }
+        }
+
+        // Initialize page on load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, current user:', currentUser);
+            
+            // Load welcome message for current user
+            loadWelcomeMessage();
+        });
+
+        // Fetch and display AI Guard status
+        async function updateAIGuardStatus() {
+            const statusElement = document.getElementById('aiGuardStatus');
+            const statusTextElement = document.getElementById('aiGuardStatusText');
+            
+            // Show loading state
+            statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #6c757d;">...</strong>';
+            
+            try {
+                const response = await fetch(`/api/ai-guard-status?user_name=${encodeURIComponent(currentUser)}`);
+                const data = await response.json();
+                
+                if (data.ai_guard_enabled) {
+                    statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #28a745;">ON</strong>';
+                    statusElement.style.background = '#d4edda';
+                    statusElement.style.borderColor = '#c3e6cb';
+                    statusElement.style.color = '#155724';
+                } else {
+                    statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #dc3545;">OFF</strong>';
+                    statusElement.style.background = '#f8d7da';
+                    statusElement.style.borderColor = '#f5c6cb';
+                    statusElement.style.color = '#721c24';
+                }
+                
+                statusElement.style.display = 'block';
+                statusElement.title = data.description;
+                
+            } catch (error) {
+                console.error('Failed to fetch AI Guard status:', error);
+                const statusElement = document.getElementById('aiGuardStatus');
+                const statusTextElement = document.getElementById('aiGuardStatusText');
+                statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #6c757d;">ERROR</strong>';
+                statusElement.style.display = 'block';
+            }
+        }
+
+        // Auto-refresh AI Guard status every 15 seconds for real-time updates
+        let statusRefreshInterval;
+        
+        function startStatusPolling() {
+            // Initial load
+            updateAIGuardStatus();
+            
+            // Auto-refresh every 15 seconds (good for demos)
+            statusRefreshInterval = setInterval(() => {
+                console.log('Auto-refreshing AI Guard status...');
+                updateAIGuardStatus();
+            }, 15000); // 15 seconds
+        }
+        
+        function stopStatusPolling() {
+            if (statusRefreshInterval) {
+                clearInterval(statusRefreshInterval);
+                statusRefreshInterval = null;
+            }
+        }
+
+        // Also initialize when DOM is ready (faster than full page load)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM ready, current user:', currentUser);
+            startStatusPolling(); // Start auto-refresh
+        });
+        
+        // Stop polling when page is hidden/closed
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopStatusPolling();
+            } else {
+                startStatusPolling();
+            }
+        });
+
+
+    </script>
+</body>
+</html>

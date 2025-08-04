@@ -1,18 +1,17 @@
 import requests
-from .config import AI_GUARD_ENABLED, DD_API_KEY, DD_APP_KEY, AI_GUARD_URL, log
+from .config import DD_API_KEY, DD_APP_KEY, AI_GUARD_URL, log, is_ai_guard_enabled
 
 
-def evaluate_prompt_with_ai_guard(prompt: str, history: list = None) -> dict:
+def evaluate_prompt_with_ai_guard(prompt: str, history: list = None, user_id: str = "anonymous") -> dict:
     """
     Evaluate a prompt using Datadog's AI Guard API for safety detection
     Returns: {"action": "ALLOW|DENY|ABORT", "reason": "explanation", "safe": bool}
     """
-    global AI_GUARD_ENABLED, DD_API_KEY, DD_APP_KEY
     
-    # Feature flag check - if disabled, skip entirely
-    if not AI_GUARD_ENABLED:
-        log.debug("AI Guard feature flag disabled - allowing request")
-        return {"action": "ALLOW", "reason": "AI Guard feature disabled", "safe": True}
+    # Dynamic feature flag check using Eppo - if disabled, skip entirely
+    if not is_ai_guard_enabled(user_id):
+        log.debug(f"AI Guard feature flag disabled for user '{user_id}' - allowing request")
+        return {"action": "ALLOW", "reason": "AI Guard feature disabled by feature flag", "safe": True}
     
     # Configuration check - if enabled but keys missing, allow (fail open)
     if not DD_API_KEY or not DD_APP_KEY:

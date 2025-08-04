@@ -40,9 +40,11 @@ def setup_routes(app):
     def ctf_ui(): 
         return render_template("ctf.html")
 
-    @app.route("/security")
-    def security_ui(): 
-        return render_template("security.html")
+
+
+    @app.route("/business")
+    def business_ui(): 
+        return render_template("business.html")
 
     # API routes
     @app.route("/api/play", methods=["POST"])
@@ -68,8 +70,25 @@ def setup_routes(app):
     def security_api():
         data = request.get_json(silent=True) or {}
         prompt = data.get("prompt", "").strip()
-        result = process_security_request(prompt)
+        user_name = data.get("user_name", "anonymous")  # Extract user_name from request
+        log.info(f"Security API called for user: {user_name}")
+        result = process_security_request(prompt, user_name)
         return jsonify(result)
+
+    @app.route("/api/ai-guard-status", methods=["GET"])
+    def get_ai_guard_status():
+        """Get AI Guard status for current user (read-only visibility)"""
+        user_name = request.args.get("user_name", "anonymous")
+        
+        from .config import is_ai_guard_enabled
+        
+        status = {
+            "ai_guard_enabled": is_ai_guard_enabled(user_name),
+            "user": user_name,
+            "description": "AI Guard provides real-time safety evaluation of user prompts"
+        }
+        
+        return jsonify(status)
 
     @app.route("/api/ctf", methods=["POST"])
     def ctf_api():
@@ -88,4 +107,36 @@ def setup_routes(app):
     def toggle_chaos():
         chaos_state = toggle_chaos_mode()
         log.info("Chaos mode toggled → %s", chaos_state)
-        return jsonify(chaos=chaos_state) 
+        return jsonify(chaos=chaos_state)
+
+    # Business functionality routes that naturally query the database
+    @app.route("/api/profile/<username>", methods=["GET"])
+    def get_profile(username):
+        """Get user profile - legitimate business operation"""
+        from .database import get_user_profile
+        profile = get_user_profile(username)
+        if profile:
+            return jsonify({
+                "username": profile[0],
+                "email": profile[1], 
+                "role": profile[2],
+                "created_at": profile[3]
+            })
+        else:
+            return jsonify({"error": "User not found"}), 404
+
+    @app.route("/api/orders/<username>", methods=["GET"])
+    def get_orders(username):
+        """Get user orders - legitimate business operation"""
+        from .database import get_user_orders
+        orders = get_user_orders(username)
+        order_list = []
+        for order in orders:
+            order_list.append({
+                "id": order[0],
+                "product_name": order[1],
+                "amount": float(order[2]),
+                "status": order[3],
+                "created_at": order[4]
+            })
+        return jsonify({"orders": order_list}) 

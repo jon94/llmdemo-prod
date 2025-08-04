@@ -26,14 +26,16 @@ services:
       - DD_REMOTE_CONFIGURATION_ENABLED=true
       - DD_REMOTE_CONFIGURATION_REFRESH_INTERVAL=5s
       
-      # AI Guard Configuration (src/ai_guard.py)
-      - AI_GUARD_ENABLED=false
+      # AI Guard Configuration (now managed via Eppo feature flags)
       - DD_API_KEY=${DD_API_KEY}
       - DD_APP_KEY=${DD_APP_KEY}
       
+      # Eppo Feature Flag Configuration (controls AI Guard dynamically)
+      - EPPO_API_KEY=${EPPO_API_KEY}
+      
       # Application Configuration
       - FLASK_DEBUG=false
-      - LOG_LEVEL=INFO
+      - LOG_LEVEL=DEBUG
       - CHAOS_ON=false
     
     depends_on:

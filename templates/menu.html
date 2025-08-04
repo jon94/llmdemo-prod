@@ -275,12 +275,13 @@
       </a>
       
 
-      <a href="/security" class="menu-item security">
-        <div class="menu-icon">🔒</div>
-        <div class="menu-title">Security Drill</div>
-        <p class="menu-description">Explore LLM security vulnerabilities and protection mechanisms</p>
-      </a>
+
       
+      <a href="/business" class="menu-item confidence" onclick="navigateToBusinessChat(event)">
+        <div class="menu-icon">🛍️</div>
+        <div class="menu-title">ShopAssist Chat</div>
+        <p class="menu-description">Realistic ecommerce customer support chat with database integration</p>
+      </a>
 
     </div>
     
@@ -289,7 +290,7 @@
         <div class="status-dot"></div>
         <span>System Online</span>
       </div>
-      <div>3 Experiences Available</div>
+      <div>4 Experiences Available</div>
       <div id="currentTime"></div>
     </div>
   </div>
@@ -366,6 +367,17 @@
       }
     `;
     document.head.appendChild(style);
+
+    // Navigate to business chat with user context
+    function navigateToBusinessChat(event) {
+      event.preventDefault();
+      
+      // Get username from session storage
+      const userName = sessionStorage.getItem("user_name") || "anonymous";
+      
+      // Navigate to business page with user parameter
+      window.location.href = `/business?user=${encodeURIComponent(userName)}`;
+    }
   </script>
 </body>
 </html>

@@ -5,6 +5,8 @@ python-dotenv>=1.0
 gunicorn>=22.0
 python-json-logger>=3.3.0
 requests>=2.25.0
+# Eppo for feature flag management
+eppo-server-sdk>=3.0.0
 # LangChain for RAG and evaluation
 langchain>=0.1.0
 langchain-openai>=0.1.0

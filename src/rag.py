@@ -55,38 +55,11 @@ def retrieve_documents_from_sqlite(query: str, db_path: str) -> List[Document]:
             metadata={"type": "backdoor", "name": "JAILBREAK_KEY"}
         ))
         
-        log.info(f"Retrieved {len(documents)} documents from SQLite for query: {query}")
-        
-        # Use LLMObs.annotate with proper input_data and output_data
-        output_data = []
-        for i, doc in enumerate(documents):
-            # Ensure all fields are strings and handle None values
-            page_content = doc.page_content or ""
-            text_content = str(page_content[:200] + "..." if len(page_content) > 200 else page_content)
-            
-            output_data.append({
-                "id": str(doc.metadata.get("name", f"doc_{i}")),
-                "text": text_content,
-                "name": str(doc.metadata.get("name", "")),
-                "score": 1.0 if doc.metadata.get("type") == "secret" else 0.8
-            })
-        log.info(f"Document retrieval output_data: {output_data}")
-        
-        LLMObs.annotate(
-            input_data=str(query),  # Ensure it's a string
-            output_data=output_data
-        )
-        
+        log.info(f"Retrieved {len(documents)} documents from SQLite for query: {query}")        
         return documents
         
     except Exception as e:
         log.error(f"SQLite retrieval error: {e}")
-        output_data = []  # Empty array on error
-        log.info(f"Document retrieval error output_data: {output_data}")
-        LLMObs.annotate(
-            input_data=str(query),
-            output_data=output_data
-        )
         return []
 
 
