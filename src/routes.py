@@ -5,8 +5,7 @@ from .config import client, CHAOS_ON, log
 from .workflows import (
     process_user_prompt, 
     process_security_request, 
-    process_ctf_request, 
-    toggle_chaos_mode
+    process_ctf_request
 )
 
 
@@ -51,12 +50,6 @@ def setup_routes(app):
     def play_api():
         data = request.get_json(silent=True) or {}
         messages = data.get("messages", [])
-
-        # Check chaos mode - import here to get current value
-        import src.config as config
-        if config.CHAOS_ON:
-            time.sleep(2 + random.random())
-
         # auto‐traced LLM span still applies
         resp = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -119,12 +112,6 @@ def setup_routes(app):
         else:
             # New structured format with evaluation
             return jsonify(result)
-
-    @app.route("/api/chaos", methods=["POST"])
-    def toggle_chaos():
-        chaos_state = toggle_chaos_mode()
-        log.info("Chaos mode toggled → %s", chaos_state)
-        return jsonify(chaos=chaos_state)
 
     # Business functionality routes that naturally query the database
     @app.route("/api/profile/<username>", methods=["GET"])

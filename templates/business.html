@@ -23,7 +23,8 @@
 
         .chat-container {
             width: 420px;
-            height: 750px;
+            height: 90vh;
+            max-height: 900px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -43,6 +44,7 @@
             .chat-container {
                 width: 100vw;
                 height: 100vh;
+                max-height: none;
                 border-radius: 0;
                 box-shadow: none;
             }
@@ -113,6 +115,8 @@
             padding: 20px;
             overflow-y: auto;
             background: #f8f9fa;
+            min-height: 0;
+            scroll-behavior: smooth;
         }
 
         .message {
@@ -395,11 +399,12 @@
 
         /* Security Challenges Showcase Styling */
         .challenges-section {
-            margin: 15px 0;
+            margin: 15px 0 20px 0;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border: 1px solid #dee2e6;
             border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         .challenges-header {
@@ -525,14 +530,10 @@
         /* Mobile responsiveness */
         @media (max-width: 768px) {
             /* Stack status badges vertically on mobile */
-            .ai-guard-status, .rag-status {
+            .ai-guard-status {
                 right: 10px !important;
                 font-size: 0.6rem !important;
                 padding: 3px 6px !important;
-            }
-            
-            .rag-status {
-                top: 45px !important;
             }
             
             /* Challenges section mobile optimization */
@@ -574,10 +575,7 @@
                 <span id="aiGuardStatusText">🛡️ AI Guard: Loading...</span>
             </div>
             
-            <!-- RAG Status Indicator (moved to right side) -->
-            <div class="rag-status" id="ragStatus" style="position: absolute; top: 50px; right: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 4px 8px; font-size: 0.7rem; color: #495057; display: none; cursor: pointer; transition: opacity 0.2s ease;" onclick="updateRAGStatus()" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'" title="Click to refresh status immediately">
-                <span id="ragStatusText">🧠 Mode: Loading...</span>
-            </div>
+
             <h1>🛍️ ShopAssist</h1>
             <p>Customer Support Chat</p>
             
@@ -620,7 +618,7 @@
                 
                 <div class="challenges-content" id="challengesContent">
                     <div class="challenges-intro">
-                        <p>Test our AI security defenses! Each challenge demonstrates different OWASP LLM vulnerabilities:</p>
+                        <p>Test our AI security defenses! Each challenge demonstrates different attack techniques:</p>
                     </div>
                     
                     <div class="challenge-category">
@@ -986,6 +984,7 @@
         function toggleChallenges() {
             const content = document.getElementById('challengesContent');
             const toggle = document.getElementById('challengesToggle');
+            const section = document.getElementById('challengesSection');
             
             if (content.classList.contains('expanded')) {
                 content.classList.remove('expanded');
@@ -995,6 +994,15 @@
                 content.classList.add('expanded');
                 toggle.classList.add('expanded');
                 toggle.textContent = '▲';
+                
+                // Scroll to show the expanded content after a short delay
+                setTimeout(() => {
+                    section.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start',
+                        inline: 'nearest'
+                    });
+                }, 100);
             }
         }
 
@@ -1099,55 +1107,19 @@
             }
         }
 
-        // Fetch and display RAG status
-        async function updateRAGStatus() {
-            const statusElement = document.getElementById('ragStatus');
-            const statusTextElement = document.getElementById('ragStatusText');
-            
-            // Show loading state
-            statusTextElement.innerHTML = '🧠 Mode: <strong style="color: #6c757d;">...</strong>';
-            
-            try {
-                const response = await fetch(`/api/rag-status?user_name=${encodeURIComponent(currentUser)}`);
-                const data = await response.json();
-                
-                if (data.rag_enabled) {
-                    statusTextElement.innerHTML = '🧠 Mode: <strong style="color: #007bff;">RAG (DB)</strong>';
-                    statusElement.style.background = '#d1ecf1';
-                    statusElement.style.borderColor = '#bee5eb';
-                    statusElement.style.color = '#0c5460';
-                } else {
-                    statusTextElement.innerHTML = '🧠 Mode: <strong style="color: #fd7e14;">Direct LLM</strong>';
-                    statusElement.style.background = '#fff3cd';
-                    statusElement.style.borderColor = '#ffeaa7';
-                    statusElement.style.color = '#856404';
-                }
-                
-                statusElement.style.display = 'block';
-                statusElement.title = data.description;
-                
-            } catch (error) {
-                console.error('Failed to fetch RAG status:', error);
-                const statusElement = document.getElementById('ragStatus');
-                const statusTextElement = document.getElementById('ragStatusText');
-                statusTextElement.innerHTML = '🧠 Mode: <strong style="color: #6c757d;">ERROR</strong>';
-                statusElement.style.display = 'block';
-            }
-        }
 
-        // Auto-refresh AI Guard and RAG status every 3 seconds for live demos
+
+        // Auto-refresh AI Guard status every 3 seconds for live demos
         let statusRefreshInterval;
         
         function startStatusPolling() {
             // Initial load
             updateAIGuardStatus();
-            updateRAGStatus();
             
             // Auto-refresh every 3 seconds (fast for live demos)
             statusRefreshInterval = setInterval(() => {
-                console.log('Auto-refreshing AI Guard and RAG status...');
+                console.log('Auto-refreshing AI Guard status...');
                 updateAIGuardStatus();
-                updateRAGStatus();
             }, 3000); // 3 seconds
         }
         
