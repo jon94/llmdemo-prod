@@ -10,6 +10,9 @@ OPENAI_API_KEY=sk-proj-xxxxxx
 DD_API_KEY=xxxxxxxx
 # Datadog APP Key - required for aiguard
 DD_APP_KEY=xxxxxxx
+
+# Eppo API Key - required for FF capabilities 
+EPPO_API_KEY=xxxxxxx
 ```
 ```
 docker compose build --no-cache --pull
