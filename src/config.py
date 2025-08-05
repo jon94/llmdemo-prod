@@ -129,6 +129,40 @@ def is_ai_guard_enabled(user_id: str = "anonymous") -> bool:
         log.debug(f"🔄 Error fallback to AI_GUARD_ENABLED environment variable: {fallback_value}")
         return fallback_value
 
+def is_rag_enabled(user_id: str = "anonymous") -> bool:
+    """
+    Check if RAG (database) is enabled using Eppo feature flag 'jon_lim_eppo'
+    When True: Use RAG (database queries)
+    When False: Use direct LLM responses (no database)
+    Falls back to False (Direct LLM) if Eppo is not available
+    """
+    global eppo_initialized
+    
+    try:
+        if eppo_initialized:
+            import eppo_client
+            client = eppo_client.get_instance()
+            
+            flag_result = client.get_boolean_assignment(
+                "jon_lim_eppo",  # flag key
+                user_id,         # subject key
+                {"user_id": user_id},  # user properties
+                False            # default value (Direct LLM by default)
+            )
+            log.debug(f"🚩 Eppo feature flag 'jon_lim_eppo' for user '{user_id}': {flag_result} ({'RAG' if flag_result else 'Direct LLM'})")
+            return flag_result
+        else:
+            # Fall back to Direct LLM (default behavior)
+            fallback_value = False
+            log.debug(f"🔄 Falling back to Direct LLM (default): {fallback_value}")
+            return fallback_value
+        
+    except Exception as e:
+        log.error(f"❌ Error evaluating RAG feature flag: {e}")
+        fallback_value = False
+        log.debug(f"🔄 Error fallback to Direct LLM (default): {fallback_value}")
+        return fallback_value
+
 # Show deprecation warning if using legacy environment variable
 if AI_GUARD_ENABLED:
     log.warning("⚠️ AI_GUARD_ENABLED environment variable is deprecated. Use Eppo feature flag 'jon_ai_guard' instead.")

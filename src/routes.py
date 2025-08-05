@@ -90,6 +90,23 @@ def setup_routes(app):
         
         return jsonify(status)
 
+    @app.route("/api/rag-status", methods=["GET"])
+    def get_rag_status():
+        """Get RAG vs Direct LLM status for current user"""
+        user_name = request.args.get("user_name", "anonymous")
+        
+        from .config import is_rag_enabled
+        
+        rag_enabled = is_rag_enabled(user_name)
+        status = {
+            "rag_enabled": rag_enabled,
+            "mode": "RAG (Database)" if rag_enabled else "Direct LLM",
+            "user": user_name,
+            "description": "RAG uses database queries for personalized responses. Direct LLM provides general assistance without database access."
+        }
+        
+        return jsonify(status)
+
     @app.route("/api/ctf", methods=["POST"])
     def ctf_api():
         msg = request.get_data(as_text=True).strip()
