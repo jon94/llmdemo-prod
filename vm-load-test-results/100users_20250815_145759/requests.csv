@@ -1,0 +1,12 @@
+user_id,endpoint,status_code,response_time,total_time
+1,/api/orders/john_doe,00,0.482876,.506737000
+7,/api/orders/john_doe,00,0.477426,.495728000
+4,/api/orders/john_doe,00,0.497160,.519867000
+5,/menu,00,0.484100,.510969000
+6,/menu,00,0.479899,.497903000
+2,/api/orders/john_doe,00,0.472697,.489552000
+3,/api/ai-guard-status?user_name=vmuser3,00,0.481181,.500006000
+11,/api/ai-guard-status?user_name=vmuser11,00,0.473964,.490906000
+9,/api/rag-status?user_name=vmuser9,00,0.500854,.533726000
+8,/api/play,00,1.021944,1.047426000
+10,/api/orders/john_doe,00,0.511208,.542614000

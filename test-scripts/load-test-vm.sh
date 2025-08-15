@@ -9,7 +9,8 @@ set -e
 CONCURRENT_USERS=${1:-100}  # Default 100 users, or pass as argument
 TEST_DURATION=120           # 2 minutes for more thorough testing
 RAMP_UP_TIME=20            # 20 seconds to reach full load
-BASE_URL="http://localhost:5000"
+# BASE_URL="http://localhost:5000"
+BASE_URL="http://34.61.53.23:5000"
 
 echo "🚀 VM Load Testing"
 echo "=================="
