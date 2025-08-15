@@ -73,9 +73,15 @@ def setup_routes(app):
             if eppo_initialized:
                 import eppo_client
                 client = eppo_client.get_instance()
-                # Force a refresh of the configuration
-                client.refresh_configuration()
-                return jsonify({"status": "success", "message": "Feature flags refreshed"})
+                # Get current configuration info (no manual refresh available)
+                config = client.get_configuration()
+                flag_keys = config.get_flag_keys() if config else []
+                
+                return jsonify({
+                    "status": "success", 
+                    "message": f"Eppo client is polling every 10 seconds. Current flags: {list(flag_keys)}",
+                    "note": "Changes should be picked up automatically within 10-15 seconds"
+                })
             else:
                 return jsonify({"status": "error", "message": "Eppo client not initialized"})
         except Exception as e:
