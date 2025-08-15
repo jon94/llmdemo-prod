@@ -118,6 +118,8 @@ services:
       - nginx-html:/usr/share/nginx/html
     environment:
       - DEFAULT_HOST=dd-demo-sg-llm.com
+    labels:
+      - "com.github.nginx-proxy.nginx"
     depends_on:
       - app
 
@@ -134,6 +136,7 @@ services:
       - nginx-acme:/etc/acme.sh
     environment:
       - DEFAULT_EMAIL=admin@dd-demo-sg-llm.com
+      - NGINX_PROXY_CONTAINER=nginx-proxy
     depends_on:
       - nginx
 
