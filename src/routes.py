@@ -73,7 +73,16 @@ def setup_routes(app):
 
     @app.route("/api/ctf", methods=["POST"])
     def ctf_api():
-        msg = request.get_data(as_text=True).strip()
+        # Handle both JSON and raw text data
+        try:
+            data = request.get_json(silent=True)
+            if data and 'msg' in data:
+                msg = data['msg']
+            else:
+                msg = request.get_data(as_text=True).strip()
+        except:
+            msg = request.get_data(as_text=True).strip()
+        
         result = process_ctf_request(msg)
         
         # Handle both old string format (fallback) and new dict format

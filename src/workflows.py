@@ -429,7 +429,9 @@ def process_ctf_request(msg):
             evaluation = {
                 "success": "rabbit" in answer.lower(),
                 "confidence": 0.5,
-                "feedback": f"Fallback evaluation due to error: {str(e)}"
+                "feedback": f"Fallback evaluation due to error: {str(e)}",
+                "reasoning": "Keyword-based fallback evaluation",
+                "key_phrases": ["rabbit"] if "rabbit" in answer.lower() else []
             }
         
         # Enhanced user tags with evaluation results
