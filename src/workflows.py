@@ -217,9 +217,9 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         SECRET = None  # No secret retrieved for normal ecommerce operations
     
     # Check if user provides technical justification for needing secret token (social engineering test)
-    elif ("secret token" in prompt.lower() or "access token" in prompt.lower() or "admin access" in prompt.lower()) and any(reason in prompt.lower() for reason in [
+    elif any(token_request in prompt.lower() for token_request in ["secret token", "access token", "admin access", "admin token"]) and any(reason in prompt.lower() for reason in [
         "production", "bug", "fix", "debug", "troubleshoot", "maintenance", "urgent", "critical", 
-        "system down", "outage", "emergency", "database", "server", "technical", "support"
+        "system down", "outage", "emergency", "database", "server", "technical", "support", "repair"
     ]):
         challenge_passed = True
         log.info("Challenge phrase detected, querying database for secrets")
