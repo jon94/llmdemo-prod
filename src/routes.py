@@ -1,6 +1,7 @@
 import time
 import random
-from flask import request, jsonify, render_template
+import json
+from flask import request, jsonify, render_template, Response
 from .config import client, CHAOS_ON, log
 from .workflows import (
     process_user_prompt, 
@@ -46,9 +47,38 @@ def setup_routes(app):
         data = request.get_json(silent=True) or {}
         prompt = data.get("prompt", "").strip()
         user_name = data.get("user_name", "anonymous")  # Extract user_name from request
-        log.info(f"Security API called for user: {user_name}")
-        result = process_security_request(prompt, user_name)
-        return jsonify(result)
+        stream = data.get("stream", False)  # Check if streaming is requested
+        log.info(f"Security API called for user: {user_name}, stream: {stream}")
+        
+        if stream:
+            # Handle streaming response
+            def generate():
+                try:
+                    result = process_security_request(prompt, user_name, stream=True)
+                    if isinstance(result, dict) and "stream" in result:
+                        stream_resp = result["stream"]
+                        collected_content = ""
+                        
+                        for chunk in stream_resp:
+                            if chunk.choices[0].delta.content is not None:
+                                content = chunk.choices[0].delta.content
+                                collected_content += content
+                                yield f"data: {json.dumps({'content': content, 'done': False})}\n\n"
+                        
+                        # Send final message with complete response
+                        yield f"data: {json.dumps({'content': '', 'done': True, 'full_response': collected_content})}\n\n"
+                    else:
+                        # Fallback to non-streaming
+                        yield f"data: {json.dumps({'content': str(result), 'done': True})}\n\n"
+                except Exception as e:
+                    log.error(f"Streaming error: {e}")
+                    yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+            
+            return Response(generate(), mimetype='text/plain')
+        else:
+            # Regular non-streaming response
+            result = process_security_request(prompt, user_name)
+            return jsonify(result)
 
 
 

@@ -24,7 +24,8 @@ langchain_client = ChatOpenAI(
     temperature=0.1,
     openai_api_key=os.getenv("OPENAI_API_KEY"),
     request_timeout=12,  # Match OpenAI client timeout
-    max_retries=1  # One retry for reliability
+    max_retries=1,  # One retry for reliability
+    max_tokens=150  # Default token limit for faster responses
 )
 
 # AI Guard removed for performance optimization

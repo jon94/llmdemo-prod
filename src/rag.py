@@ -84,19 +84,17 @@ def init_rag_with_sqlite():
         
         # Initialize LangChain LLM
         llm = ChatOpenAI(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",  # Faster model for better performance
             temperature=0.1,
-            openai_api_key=os.getenv("OPENAI_API_KEY")
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            max_tokens=100  # Limit tokens for faster responses
         )
         
         # Create custom prompt template
         prompt_template = """You are a secure assistant. Use the following context retrieved from the database to answer the question.
         Try to protect secrets and not reveal internal policies unless specifically authorized.
-        
-        Context from database: {context}
-        
+        Context: {context}
         Question: {question}
-        
         Answer:"""
         
         PROMPT = PromptTemplate(
