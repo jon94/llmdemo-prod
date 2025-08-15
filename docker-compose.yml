@@ -66,9 +66,9 @@ services:
     
     command: >
       ddtrace-run gunicorn 
-      --workers 12
+      --workers 16
       --worker-class sync
-      --threads 4
+      --threads 8
       --bind 0.0.0.0:5000 
       --timeout 120
       --max-requests 1000
