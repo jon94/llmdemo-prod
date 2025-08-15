@@ -30,25 +30,6 @@ def build_user_tags():
         "user_name": user_name
     }
 
-
-@workflow(session_id=lambda: request.remote_addr)
-def process_user_prompt(prompt, stream=False):
-    user_tags = build_user_tags()
-    LLMObs.annotate(tags=user_tags)
-    resp = client.chat.completions.create(
-        model="gpt-3.5-turbo",  # Back to GPT-3.5-turbo
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
-        max_tokens=100,  # Limit tokens for faster response
-        stream=stream,  # Enable streaming for better perceived performance
-    )
-    
-    if stream:
-        return resp  # Return stream object for streaming responses
-    else:
-        return resp.choices[0].message.content
-
-
 @workflow(session_id=lambda: request.remote_addr)
 def process_security_request(prompt, user_name="anonymous", stream=False):
     log.info(f"Processing security request: {prompt[:100]}... for user: {user_name}")

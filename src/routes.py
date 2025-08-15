@@ -4,7 +4,6 @@ import json
 from flask import request, jsonify, render_template, Response
 from .config import client, CHAOS_ON, log
 from .workflows import (
-    process_user_prompt, 
     process_security_request, 
     process_ctf_request
 )
