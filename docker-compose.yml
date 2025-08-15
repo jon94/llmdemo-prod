@@ -37,12 +37,18 @@ services:
       - FLASK_DEBUG=false
       - LOG_LEVEL=DEBUG
       - CHAOS_ON=false
+      
+      # Nginx-proxy configuration for automatic HTTPS
+      - VIRTUAL_HOST=dd-demo-sg-llm.com,www.dd-demo-sg-llm.com
+      - LETSENCRYPT_HOST=dd-demo-sg-llm.com,www.dd-demo-sg-llm.com
+      - LETSENCRYPT_EMAIL=admin@dd-demo-sg-llm.com
     
     depends_on:
       - datadog
     
-    ports:
-      - "5000:5000"
+    # Port 5000 exposed internally for nginx-proxy
+    expose:
+      - "5000"
     
     # Health check using the modular app structure
     healthcheck:
@@ -96,6 +102,47 @@ services:
       - "8126:8126"  # APM trace intake port
       - "4317:4317"  # OTLP gRPC receiver
       - "4318:4318"  # OTLP HTTP receiver
+
+  # Nginx reverse proxy with automatic HTTPS
+  nginx:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - nginx-certs:/etc/nginx/certs
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+    environment:
+      - DEFAULT_HOST=dd-demo-sg-llm.com
+    depends_on:
+      - app
+
+  # Let's Encrypt companion for automatic SSL
+  letsencrypt:
+    image: nginxproxy/acme-companion
+    container_name: nginx-letsencrypt
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx-certs:/etc/nginx/certs
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - nginx-acme:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=admin@dd-demo-sg-llm.com
+    depends_on:
+      - nginx
+
+# Volumes for nginx and SSL certificates
+volumes:
+  nginx-certs:
+  nginx-vhost:
+  nginx-html:
+  nginx-acme:
 
 # Optional: Add networks for better isolation
 networks:
