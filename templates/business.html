@@ -57,15 +57,7 @@
                 font-size: 1.1rem;
             }
             
-            /* Mobile positioning for AI Guard status */
-            .ai-guard-status {
-                position: relative !important;
-                top: auto !important;
-                left: auto !important;
-                margin: 4px auto 0 auto !important;
-                display: inline-block !important;
-                max-width: fit-content;
-            }
+
         }
 
         .chat-header {
@@ -570,10 +562,7 @@
                 <span>Online</span>
             </div>
             
-            <!-- AI Guard Status Indicator (moved to right side) -->
-            <div class="ai-guard-status" id="aiGuardStatus" style="position: absolute; top: 20px; right: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 4px 8px; font-size: 0.7rem; color: #495057; display: none; cursor: pointer; transition: opacity 0.2s ease;" onclick="updateAIGuardStatus()" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'" title="Click to refresh status immediately">
-                <span id="aiGuardStatusText">🛡️ AI Guard: Loading...</span>
-            </div>
+
             
 
             <h1>🛍️ ShopAssist</h1>
@@ -654,7 +643,7 @@
                     </div>
                     
                     <div class="challenges-footer">
-                        <small>💡 <strong>How to use:</strong> Click any challenge above to send it as a message, or type your own variations in the chat box below. Watch how <strong>AI Guard</strong> and <strong>Datadog WAF</strong> protect against these attacks!</small>
+                        <small>💡 <strong>How to use:</strong> Click any challenge above to send it as a message, or type your own variations in the chat box below. Watch how <strong>Datadog WAF</strong> protects against these attacks!</small>
                     </div>
                 </div>
             </div>
@@ -882,73 +871,7 @@
                     }
                 }
                 
-                // Handle AI Guard security responses
-                if (data.ai_guard) {
-                    const aiGuard = data.ai_guard;
-                    let guardMessage = '';
-                    
-                    if (aiGuard.action === 'DENY' && aiGuard.blocked) {
-                        // AI Guard DENY - Show detailed security block message
-                        guardMessage = `
-                            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <span style="font-size: 1.5rem;">🛡️</span>
-                                    <strong style="color: #856404;">AI Guard Security Block</strong>
-                                </div>
-                                <p style="margin: 0 0 10px 0; color: #856404;">
-                                    <strong>Action:</strong> ${aiGuard.action} - Request blocked for safety
-                                </p>
-                                <p style="margin: 0 0 10px 0; color: #856404; font-size: 0.9rem;">
-                                    <strong>Reason:</strong> ${aiGuard.reason}
-                                </p>
-                                <p style="margin: 0; color: #856404; font-size: 0.85rem;">
-                                    This demonstrates <strong>AI Guard</strong> real-time prompt safety evaluation. Try rephrasing your request in a safer way.
-                                </p>
-                            </div>
-                        `;
-                    } else if (aiGuard.action === 'ABORT' && aiGuard.blocked) {
-                        // AI Guard ABORT - Show critical security block
-                        guardMessage = `
-                            <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 15px; margin: 10px 0;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                    <span style="font-size: 1.5rem;">🚨</span>
-                                    <strong style="color: #721c24;">AI Guard Critical Block</strong>
-                                </div>
-                                <p style="margin: 0 0 10px 0; color: #721c24;">
-                                    <strong>Action:</strong> ${aiGuard.action} - Request terminated for security
-                                </p>
-                                <p style="margin: 0 0 10px 0; color: #721c24; font-size: 0.9rem;">
-                                    <strong>Reason:</strong> ${aiGuard.reason}
-                                </p>
-                                <p style="margin: 0; color: #721c24; font-size: 0.85rem;">
-                                    This request was classified as high-risk and automatically blocked by <strong>AI Guard</strong>.
-                                </p>
-                            </div>
-                        `;
-                    } else if (aiGuard.action === 'ALLOW' && !aiGuard.blocked) {
-                        // AI Guard ALLOW - Show subtle security check passed
-                        guardMessage = `
-                            <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 6px; padding: 8px 12px; margin: 8px 0; font-size: 0.85rem;">
-                                <span style="color: #0c5460;">✅</span> <strong>AI Guard:</strong> Request evaluated and approved
-                                ${aiGuard.reason ? `<br><small style="color: #0c5460; opacity: 0.8;">Reason: ${aiGuard.reason}</small>` : ''}
-                            </div>
-                        `;
-                    }
-                    
-                    // Add the AI Guard message to the response
-                    if (guardMessage) {
-                        formattedResponse += guardMessage;
-                    }
-                    
-                    // Log AI Guard actions for debugging
-                    console.log('AI Guard Action:', {
-                        action: aiGuard.action,
-                        blocked: aiGuard.blocked,
-                        reason: aiGuard.reason,
-                        timestamp: new Date().toISOString(),
-                        user: currentUser
-                    });
-                }
+
                 
                 // Add some ecommerce context if the response seems generic
                 else if (!formattedResponse.toLowerCase().includes('order') && 
@@ -1089,79 +1012,7 @@
             loadWelcomeMessage();
         });
 
-        // Fetch and display AI Guard status
-        async function updateAIGuardStatus() {
-            const statusElement = document.getElementById('aiGuardStatus');
-            const statusTextElement = document.getElementById('aiGuardStatusText');
-            
-            // Show loading state
-            statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #6c757d;">...</strong>';
-            
-            try {
-                const response = await fetch(`/api/ai-guard-status?user_name=${encodeURIComponent(currentUser)}`);
-                const data = await response.json();
-                
-                if (data.ai_guard_enabled) {
-                    statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #28a745;">ON</strong>';
-                    statusElement.style.background = '#d4edda';
-                    statusElement.style.borderColor = '#c3e6cb';
-                    statusElement.style.color = '#155724';
-                } else {
-                    statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #dc3545;">OFF</strong>';
-                    statusElement.style.background = '#f8d7da';
-                    statusElement.style.borderColor = '#f5c6cb';
-                    statusElement.style.color = '#721c24';
-                }
-                
-                statusElement.style.display = 'block';
-                statusElement.title = data.description;
-                
-            } catch (error) {
-                console.error('Failed to fetch AI Guard status:', error);
-                const statusElement = document.getElementById('aiGuardStatus');
-                const statusTextElement = document.getElementById('aiGuardStatusText');
-                statusTextElement.innerHTML = '🛡️ AI Guard: <strong style="color: #6c757d;">ERROR</strong>';
-                statusElement.style.display = 'block';
-            }
-        }
 
-
-
-        // Auto-refresh AI Guard status every 3 seconds for live demos
-        let statusRefreshInterval;
-        
-        function startStatusPolling() {
-            // Initial load
-            updateAIGuardStatus();
-            
-            // Auto-refresh every 3 seconds (fast for live demos)
-            statusRefreshInterval = setInterval(() => {
-                console.log('Auto-refreshing AI Guard status...');
-                updateAIGuardStatus();
-            }, 3000); // 3 seconds
-        }
-        
-        function stopStatusPolling() {
-            if (statusRefreshInterval) {
-                clearInterval(statusRefreshInterval);
-                statusRefreshInterval = null;
-            }
-        }
-
-        // Also initialize when DOM is ready (faster than full page load)
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM ready, current user:', currentUser);
-            startStatusPolling(); // Start auto-refresh
-        });
-        
-        // Stop polling when page is hidden/closed
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopStatusPolling();
-            } else {
-                startStatusPolling();
-            }
-        });
 
 
     </script>

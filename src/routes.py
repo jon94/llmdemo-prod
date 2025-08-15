@@ -50,42 +50,9 @@ def setup_routes(app):
         result = process_security_request(prompt, user_name)
         return jsonify(result)
 
-    @app.route("/api/ai-guard-status", methods=["GET"])
-    def get_ai_guard_status():
-        """Get AI Guard status for current user (read-only visibility)"""
-        user_name = request.args.get("user_name", "anonymous")
-        
-        from .config import is_ai_guard_enabled
-        
-        status = {
-            "ai_guard_enabled": is_ai_guard_enabled(user_name),
-            "user": user_name,
-            "description": "AI Guard provides real-time safety evaluation of user prompts"
-        }
-        
-        return jsonify(status)
 
-    @app.route("/api/refresh-flags", methods=["POST"])
-    def refresh_feature_flags():
-        """Manually refresh Eppo feature flags (for demo purposes)"""
-        try:
-            from .config import eppo_initialized
-            if eppo_initialized:
-                import eppo_client
-                client = eppo_client.get_instance()
-                # Get current configuration info (no manual refresh available)
-                config = client.get_configuration()
-                flag_keys = config.get_flag_keys() if config else []
-                
-                return jsonify({
-                    "status": "success", 
-                    "message": f"Eppo client is polling every 10 seconds. Current flags: {list(flag_keys)}",
-                    "note": "Changes should be picked up automatically within 10-15 seconds"
-                })
-            else:
-                return jsonify({"status": "error", "message": "Eppo client not initialized"})
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)})
+
+
 
     @app.route("/api/rag-status", methods=["GET"])
     def get_rag_status():
