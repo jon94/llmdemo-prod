@@ -9,6 +9,7 @@ from .config import client, langchain_client, log
 from .database import query_secret_token
 from .evaluation import ctf_judge
 from .llm_challenges import prompt_injection_challenge
+from .finance_evaluator import submit_finance_evaluation
 
 # Aggressive response caching for 1s target
 @lru_cache(maxsize=500)  # Increased cache size
@@ -350,6 +351,9 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     # Include security event results for monitoring dashboard (if breach detected)
     if challenge_result["success"]:
         response["challenge"] = challenge_result
+    
+    # Submit finance evaluation for finance-related operations
+    submit_finance_evaluation(prompt, answer)
     
     # AI Guard removed for performance optimization
     return response
