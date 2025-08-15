@@ -78,12 +78,18 @@ try:
         from eppo_client.config import Config, AssignmentLogger
         
         # Configure and initialize Eppo client
+        # Use DD_ENV to determine Eppo environment, default to "production"
+        eppo_environment = os.getenv("DD_ENV", "production").lower()
+        if eppo_environment == "local":
+            eppo_environment = "test"  # Map local to test environment
+            
         client_config = Config(
             api_key=EPPO_API_KEY,
             assignment_logger=AssignmentLogger()
         )
         # Note: base_url is handled automatically by the SDK
         eppo_client.init(client_config)
+        log.info(f"🚩 Eppo client configured for environment: {eppo_environment}")
         eppo_initialized = True
         log.info("✅ Eppo client initialized successfully for feature flag 'jon_ai_guard'")
     else:
@@ -114,7 +120,8 @@ def is_ai_guard_enabled(user_id: str = "anonymous") -> bool:
                 {"user_id": user_id},  # user properties
                 False            # default value
             )
-            log.debug(f"🚩 Eppo feature flag 'jon_ai_guard' for user '{user_id}': {flag_result}")
+            log.info(f"🚩 Eppo feature flag 'jon_ai_guard' for user '{user_id}': {flag_result}")
+            log.debug(f"🔍 Eppo client details - Flag: jon_ai_guard, User: {user_id}, Properties: {{'user_id': user_id}}")
             return flag_result
         else:
             # Fall back to environment variable
