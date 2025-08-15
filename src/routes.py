@@ -31,33 +31,15 @@ def setup_routes(app):
     def index(): 
         return render_template("index.html")
 
-    @app.route("/play")
-    def play_ui(): 
-        return render_template("play.html")
-
     @app.route("/ctf")
     def ctf_ui(): 
         return render_template("ctf.html")
-
-
 
     @app.route("/business")
     def business_ui(): 
         return render_template("business.html")
 
     # API routes
-    @app.route("/api/play", methods=["POST"])
-    def play_api():
-        data = request.get_json(silent=True) or {}
-        messages = data.get("messages", [])
-        # auto‐traced LLM span still applies
-        resp = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=0.7,
-        )
-        answer = resp.choices[0].message.content
-        return jsonify(response=answer)
 
     @app.route("/api/security", methods=["POST"])
     def security_api():

@@ -70,8 +70,10 @@
     
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
       margin-top: 2rem;
     }
     
@@ -262,20 +264,11 @@
     </div>
 
     <div class="menu-grid">
-      <a href="/play" class="menu-item playground">
-        <div class="menu-icon">💬</div>
-        <div class="menu-title">Prompt Playground</div>
-        <p class="menu-description">Experiment with free-form AI conversations and explore creative prompting</p>
-      </a>
-      
       <a href="/ctf" class="menu-item ctf">
-                    <div class="menu-icon">🐕</div>
+        <div class="menu-icon">🐕</div>
         <div class="menu-title">Guardrail CTF</div>
         <p class="menu-description">Challenge AI safety measures in this capture-the-flag style game</p>
       </a>
-      
-
-
       
       <a href="/business" class="menu-item confidence" onclick="navigateToBusinessChat(event)">
         <div class="menu-icon">🛍️</div>
@@ -290,7 +283,7 @@
         <div class="status-dot"></div>
         <span>System Online</span>
       </div>
-      <div>3 Experiences Available</div>
+      <div>2 Experiences Available</div>
       <div id="currentTime"></div>
     </div>
   </div>

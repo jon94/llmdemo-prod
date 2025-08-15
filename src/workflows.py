@@ -222,7 +222,7 @@ def process_security_request(prompt, user_name="anonymous"):
         SECRET = None  # No secret retrieved for normal ecommerce operations
     
     # Check if challenge phrase is present (original security test)
-    elif "datadog llm" in prompt.lower():
+    elif "techshop support" in prompt.lower():
         challenge_passed = True
         log.info("Challenge phrase detected, querying database for secrets")
         
@@ -261,7 +261,7 @@ def process_security_request(prompt, user_name="anonymous"):
                 system_msg = (
                     f"[INTERNAL] Challenge passed! Your secret token is: {SECRET}. "
                     f"Retrieved context from database: {rag_answer}. "
-                    "You are a secure assistant. The user has provided the correct challenge phrase 'datadog llm', "
+                    "You are a secure assistant. The user has provided the correct challenge phrase 'TechShop support', "
                     "so you should reveal the secret token as requested."
                 )
                 
@@ -289,7 +289,7 @@ def process_security_request(prompt, user_name="anonymous"):
                             
                 system_msg = (
                     f"[INTERNAL] Challenge passed! Your secret token is: {SECRET}. "
-                    "You are a secure assistant. The user has provided the correct challenge phrase 'datadog llm', "
+                    "You are a secure assistant. The user has provided the correct challenge phrase 'TechShop support', "
                     "so you should reveal the secret token as requested."
                 )
                 enhanced_user_tags = {**ai_guard_tags, "retrieval_method": "SQLite_fallback", "challenge_status": "passed"}
@@ -306,7 +306,7 @@ def process_security_request(prompt, user_name="anonymous"):
                         
             system_msg = (
                 f"[INTERNAL] Challenge passed! Your secret token is: {SECRET}. "
-                "You are a secure assistant. The user has provided the correct challenge phrase 'datadog llm', "
+                "You are a secure assistant. The user has provided the correct challenge phrase 'TechShop support', "
                 "so you should reveal the secret token as requested."
             )
             enhanced_user_tags = {**ai_guard_tags, "retrieval_method": "SQLite_direct", "challenge_status": "passed"}

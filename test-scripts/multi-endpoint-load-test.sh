@@ -5,7 +5,7 @@ set -e
 
 CONCURRENT_USERS=${1:-100}
 TEST_DURATION=120
-BASE_URL="http://34.61.53.23:5000"
+BASE_URL="https://dd-demo-sg-llm.com"
 
 echo "🚀 Multi-Endpoint Load Test for COS"
 echo "==================================="
@@ -29,7 +29,6 @@ mkdir -p "$RESULTS_DIR"
 declare -a ENDPOINTS=(
     "/menu"                           # Main menu page
     "/"                              # Home page
-    "/play"                          # Play interface
     "/ctf"                           # CTF interface
     "/business"                      # Business interface
     "/api/ai-guard-status?user_name=testuser"  # Check AI Guard status
@@ -42,17 +41,16 @@ declare -a ENDPOINTS=(
 
 # Endpoint weights (higher = more likely to be called)
 declare -a WEIGHTS=(
-    30    # /menu - most common
-    20    # / - home page
-    15    # /play - interactive feature
-    10    # /ctf - CTF challenges
-    8     # /business - business features
+    35    # /menu - most common
+    25    # / - home page
+    15    # /ctf - CTF challenges
+    10    # /business - business features
     5     # ai-guard-status
     5     # rag-status
     3     # profile/alice
-    2     # orders/alice
+    1     # orders/alice
     1     # profile/bob
-    1     # orders/bob
+    0     # orders/bob (placeholder)
 )
 
 # Function to select weighted random endpoint
@@ -123,14 +121,11 @@ for i in $(seq 1 $CONCURRENT_USERS); do
             request_count=$((request_count + 1))
             
             # Mix of GET and POST requests to simulate real usage
-            if [ $((request_count % 10)) -eq 0 ]; then
-                # Every 10th request: POST to /api/play
-                make_post_request "$i" "/api/play" '{"messages":[{"role":"user","content":"Hello, how are you?"}]}'
-            elif [ $((request_count % 15)) -eq 0 ]; then
-                # Every 15th request: POST to /api/security
+            if [ $((request_count % 12)) -eq 0 ]; then
+                # Every 12th request: POST to /api/security
                 make_post_request "$i" "/api/security" '{"prompt":"What is the weather like?","user_name":"testuser'$i'"}'
-            elif [ $((request_count % 20)) -eq 0 ]; then
-                # Every 20th request: POST to /api/ctf
+            elif [ $((request_count % 18)) -eq 0 ]; then
+                # Every 18th request: POST to /api/ctf
                 make_post_request "$i" "/api/ctf" "What is 2+2?"
             else
                 # Regular GET requests
@@ -150,9 +145,8 @@ echo "📊 Testing endpoints:"
 for i in "${!ENDPOINTS[@]}"; do
     echo "   ${ENDPOINTS[i]} (weight: ${WEIGHTS[i]})"
 done
-echo "   /api/play (POST - every 10th request)"
-echo "   /api/security (POST - every 15th request)"
-echo "   /api/ctf (POST - every 20th request)"
+echo "   /api/security (POST - every 12th request)"
+echo "   /api/ctf (POST - every 18th request)"
 
 # Wait for all background jobs
 wait
@@ -179,7 +173,7 @@ echo "   Success Rate: ${SUCCESS_RATE}%"
 # Endpoint breakdown
 echo ""
 echo "📈 Endpoint Breakdown:"
-for endpoint in "${ENDPOINTS[@]}" "/api/play" "/api/security" "/api/ctf"; do
+for endpoint in "${ENDPOINTS[@]}" "/api/security" "/api/ctf"; do
     count=$(grep ",$endpoint," "$RESULTS_DIR/requests.csv" | wc -l || echo "0")
     success=$(grep ",$endpoint,200," "$RESULTS_DIR/requests.csv" | wc -l || echo "0")
     if [ $count -gt 0 ]; then
