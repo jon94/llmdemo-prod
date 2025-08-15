@@ -1,4 +1,5 @@
 from flask import request
+from functools import lru_cache
 from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.utils import Prompt
 from ddtrace.llmobs.decorators import workflow
@@ -9,6 +10,12 @@ from .database import query_secret_token
 from .evaluation import ctf_judge
 from .llm_challenges import prompt_injection_challenge
 
+# Simple response cache for common queries (helps with load testing)
+@lru_cache(maxsize=100)
+def get_cached_rag_response(query_hash: str, user_name: str) -> str:
+    """Cache RAG responses for identical queries"""
+    from .rag import retrieve_documents_from_sqlite
+    return retrieve_documents_from_sqlite(query_hash, user_name)
 
 def build_user_tags():
     data = request.get_json(silent=True) or {}

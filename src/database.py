@@ -5,9 +5,9 @@ from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.decorators import retrieval
 from .config import DB_PATH, log
 
-# Connection pool for SQLite
+# Connection pool for SQLite - optimized for performance
 class SQLiteConnectionPool:
-    def __init__(self, db_path, max_connections=20):
+    def __init__(self, db_path, max_connections=50):  # Increased from 20 to 50
         self.db_path = db_path
         self.max_connections = max_connections
         self._connections = []
