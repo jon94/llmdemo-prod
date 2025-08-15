@@ -13,18 +13,18 @@ load_dotenv()
 ddtrace.patch_all(logging=True)
 ddtrace.config.logs_injection = True
 
-# OpenAI clients - optimized for performance
+# OpenAI clients - optimized for 1s target response time
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
-    timeout=15,  # Faster timeout for better user experience
-    max_retries=1  # Reduce retries for faster response
+    timeout=8,  # Aggressive timeout for 1s target
+    max_retries=0  # No retries for fastest response
 )
 langchain_client = ChatOpenAI(
     model="gpt-3.5-turbo",
     temperature=0.1,
     openai_api_key=os.getenv("OPENAI_API_KEY"),
-    request_timeout=15,  # Match OpenAI client timeout
-    max_retries=1  # Reduce retries
+    request_timeout=8,  # Match OpenAI client timeout
+    max_retries=0  # No retries for fastest response
 )
 
 # AI Guard configuration

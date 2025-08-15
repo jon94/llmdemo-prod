@@ -56,7 +56,7 @@ CMD ["ddtrace-run", "gunicorn", \
      "--worker-class", "sync", \
      "--threads", "4", \
      "--bind", "0.0.0.0:5000", \
-     "--timeout", "60", \
+     "--timeout", "30", \
      "--max-requests", "1000", \
      "--max-requests-jitter", "100", \
      "--preload", \

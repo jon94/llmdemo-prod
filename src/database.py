@@ -21,11 +21,12 @@ class SQLiteConnectionPool:
                 conn = sqlite3.connect(self.db_path, check_same_thread=False)
                 # Enable WAL mode for better concurrent access
                 conn.execute("PRAGMA journal_mode=WAL")
-                # Optimize SQLite for performance
-                conn.execute("PRAGMA synchronous=NORMAL")
-                conn.execute("PRAGMA cache_size=10000")
+                # Aggressive SQLite optimization for 1s target
+                conn.execute("PRAGMA synchronous=OFF")  # Faster writes (was NORMAL)
+                conn.execute("PRAGMA cache_size=20000")  # Doubled cache size
                 conn.execute("PRAGMA temp_store=MEMORY")
-                conn.execute("PRAGMA mmap_size=268435456")  # 256MB
+                conn.execute("PRAGMA mmap_size=536870912")  # 512MB (doubled)
+                conn.execute("PRAGMA read_uncommitted=1")  # Faster reads
                 return conn
     
     def return_connection(self, conn):
