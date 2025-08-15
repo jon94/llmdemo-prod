@@ -5,7 +5,7 @@ from ddtrace.llmobs.utils import Prompt
 from ddtrace.llmobs.decorators import workflow
 from langchain_core.messages import SystemMessage, HumanMessage
 from .config import client, langchain_client, log
-from .ai_guard import evaluate_prompt_with_ai_guard
+
 from .database import query_secret_token
 from .evaluation import ctf_judge
 from .llm_challenges import prompt_injection_challenge
@@ -57,48 +57,14 @@ def process_security_request(prompt, user_name="anonymous"):
         log.warning(f"RAG initialization failed: {e}")
         rag_qa_chain = None
     
-    # First, evaluate prompt with AI Guard for safety (SQL injection, etc.)
-    log.info(f"Starting AI Guard evaluation for user: {user_name}...")
-    ai_guard_result = evaluate_prompt_with_ai_guard(prompt, user_id=user_name)
-    log.info(f"AI Guard result: {ai_guard_result}")
+    # Skip AI Guard for performance - removed for 1s response time target
+    log.info(f"Processing security request without AI Guard for performance")
     
-    # Add AI Guard results to user tags
-    ai_guard_tags = {
-        **user_tags,
-        "ai_guard_action": ai_guard_result["action"],
-        "ai_guard_safe": ai_guard_result["safe"],
-        "ai_guard_reason": ai_guard_result["reason"][:100]  # Truncate for logging
-    }
+    # Use simple user tags without AI Guard
+    ai_guard_tags = user_tags
     
-        # Handle AI Guard decisions
-    from .config import is_ai_guard_enabled
-    
-    if ai_guard_result["action"] == "ABORT":
-        log.warning(f"AI Guard ABORT: {ai_guard_result['reason']}")
-        LLMObs.annotate(tags={**ai_guard_tags, "security_status": "aborted"})
-        response = {"answer": "Request blocked for security reasons. Access denied."}
-        if is_ai_guard_enabled(user_name):
-            response["ai_guard"] = {
-                "action": "ABORT",
-                "reason": ai_guard_result["reason"],
-                "blocked": True
-            }
-        return response
-
-    elif ai_guard_result["action"] == "DENY":
-        log.warning(f"AI Guard DENY: {ai_guard_result['reason']}")
-        LLMObs.annotate(tags={**ai_guard_tags, "security_status": "denied"})
-        response = {"answer": "Request contains potentially unsafe content. Please rephrase your request."}
-        if is_ai_guard_enabled(user_name):
-            response["ai_guard"] = {
-                "action": "DENY",
-                "reason": ai_guard_result["reason"],
-                "blocked": True
-            }
-        return response
-    
-    # ALLOW case - continue with normal processing
-    log.info(f"AI Guard ALLOW: {ai_guard_result['reason']}")
+    # AI Guard removed for performance - proceed directly with processing
+    log.info("Processing request without AI Guard for improved performance")
     
     # First, check for normal ecommerce queries that would naturally occur
     ecommerce_queries = [
@@ -372,12 +338,7 @@ def process_security_request(prompt, user_name="anonymous"):
     if challenge_result["success"]:
         response["challenge"] = challenge_result
     
-    if is_ai_guard_enabled(user_name):
-        response["ai_guard"] = {
-            "action": "ALLOW",
-            "reason": ai_guard_result["reason"],
-            "blocked": False
-        }
+    # AI Guard removed for performance optimization
     return response
 
 

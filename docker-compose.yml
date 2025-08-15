@@ -36,7 +36,6 @@ services:
       # Application Configuration
       - FLASK_DEBUG=false
       - LOG_LEVEL=DEBUG
-      - CHAOS_ON=false
       
       # Nginx-proxy configuration for automatic HTTPS
       - VIRTUAL_HOST=dd-demo-sg-llm.com,www.dd-demo-sg-llm.com

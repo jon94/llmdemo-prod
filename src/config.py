@@ -27,35 +27,10 @@ langchain_client = ChatOpenAI(
     max_retries=1  # One retry for reliability
 )
 
-# AI Guard configuration
-# Try to read API key from file first (Docker secrets), then environment variable
-DD_API_KEY_FILE = os.getenv("DD_API_KEY_FILE")
-if DD_API_KEY_FILE and os.path.exists(DD_API_KEY_FILE):
-    try:
-        with open(DD_API_KEY_FILE, 'r') as f:
-            DD_API_KEY = f.read().strip()
-    except Exception as e:
-        DD_API_KEY = os.getenv("DD_API_KEY")
-else:
-    DD_API_KEY = os.getenv("DD_API_KEY")  # Fallback to environment variable
+# AI Guard removed for performance optimization
 
-# Application Key support (required for v2 API)
-DD_APP_KEY_FILE = os.getenv("DD_APP_KEY_FILE")
-if DD_APP_KEY_FILE and os.path.exists(DD_APP_KEY_FILE):
-    try:
-        with open(DD_APP_KEY_FILE, 'r') as f:
-            DD_APP_KEY = f.read().strip()
-    except Exception as e:
-        DD_APP_KEY = os.getenv("DD_APP_KEY")
-else:
-    DD_APP_KEY = os.getenv("DD_APP_KEY")  # Fallback to environment variable
-
-# Eppo Feature Flag Configuration
+# Eppo Feature Flag Configuration (keeping for other features)
 EPPO_API_KEY = os.getenv("EPPO_API_KEY")  # Eppo SDK key
-AI_GUARD_URL = "https://dd.datadoghq.com/api/v2/ai-guard/evaluate"  # Updated to v2 endpoint
-
-# Legacy support - keep this for backward compatibility
-AI_GUARD_ENABLED = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"
 
 # Database configuration
 DB_PATH = "secrets.db"
@@ -109,40 +84,7 @@ except Exception as e:
     log.error(f"❌ Failed to initialize Eppo client: {e}")
     eppo_initialized = False
 
-def is_ai_guard_enabled(user_id: str = "anonymous") -> bool:
-    """
-    Check if AI Guard is enabled using Eppo feature flag 'jon_ai_guard'
-    Falls back to environment variable if Eppo is not available
-    """
-    global eppo_initialized
-    
-    try:
-        if eppo_initialized:
-            # Get Eppo client instance and use feature flag
-            import eppo_client
-            client = eppo_client.get_instance()
-            
-            flag_result = client.get_boolean_assignment(
-                "jon_ai_guard",  # flag key
-                user_id,         # subject key
-                {"user_id": user_id},  # user properties
-                False            # default value
-            )
-            log.info(f"🚩 Eppo feature flag 'jon_ai_guard' for user '{user_id}': {flag_result}")
-            log.debug(f"🔍 Eppo client details - Flag: jon_ai_guard, User: {user_id}, Properties: {{'user_id': user_id}}")
-            return flag_result
-        else:
-            # Fall back to environment variable
-            fallback_value = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"
-            log.debug(f"🔄 Falling back to AI_GUARD_ENABLED environment variable: {fallback_value}")
-            return fallback_value
-        
-    except Exception as e:
-        log.error(f"❌ Error evaluating AI Guard feature flag: {e}")
-        # Fall back to environment variable on error
-        fallback_value = os.getenv("AI_GUARD_ENABLED", "false").lower() == "true"
-        log.debug(f"🔄 Error fallback to AI_GUARD_ENABLED environment variable: {fallback_value}")
-        return fallback_value
+# is_ai_guard_enabled function removed for performance optimization
 
 def is_rag_enabled(user_id: str = "anonymous") -> bool:
     """
@@ -178,22 +120,4 @@ def is_rag_enabled(user_id: str = "anonymous") -> bool:
         log.debug(f"🔄 Error fallback to Direct LLM (default): {fallback_value}")
         return fallback_value
 
-# Show deprecation warning if using legacy environment variable
-if AI_GUARD_ENABLED:
-    log.warning("⚠️ AI_GUARD_ENABLED environment variable is deprecated. Use Eppo feature flag 'jon_ai_guard' instead.")
-
-# Validate AI Guard feature flag and configuration after logger is available
-if not AI_GUARD_ENABLED:
-    log.info("🔒 AI Guard feature flag DISABLED - all requests will be allowed through")
-elif AI_GUARD_ENABLED and (not DD_API_KEY or not DD_APP_KEY):
-    missing_keys = []
-    if not DD_API_KEY:
-        missing_keys.append("DD_API_KEY")
-    if not DD_APP_KEY:
-        missing_keys.append("DD_APP_KEY")
-    log.warning(f"🔒 AI Guard feature flag ENABLED but missing keys: {', '.join(missing_keys)}. AI Guard will be disabled.")
-    AI_GUARD_ENABLED = False
-else:
-    api_key_source = "Docker secret file" if DD_API_KEY_FILE and os.path.exists(DD_API_KEY_FILE) else "environment"
-    app_key_source = "Docker secret file" if DD_APP_KEY_FILE and os.path.exists(DD_APP_KEY_FILE) else "environment"
-    log.info(f"🛡️ AI Guard feature flag ENABLED - v2 API active with API key from {api_key_source} and App key from {app_key_source}") 
+# AI Guard validation removed - performance optimization complete 
