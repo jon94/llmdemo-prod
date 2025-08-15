@@ -85,7 +85,9 @@ try:
             
         client_config = Config(
             api_key=EPPO_API_KEY,
-            assignment_logger=AssignmentLogger()
+            assignment_logger=AssignmentLogger(),
+            poll_interval_seconds=10,  # Poll for updates every 30 seconds
+            poll_jitter_seconds=5      # Add some randomness to avoid thundering herd
         )
         # Note: base_url is handled automatically by the SDK
         eppo_client.init(client_config)

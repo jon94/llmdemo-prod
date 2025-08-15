@@ -12,7 +12,7 @@ services:
       # Datadog Core Configuration
       - DD_SITE=datadoghq.com
       - DD_SERVICE=llm-play-app
-      - DD_ENV=local
+      - DD_ENV=production
       - DD_TRACE_ENABLED=true
       - DD_AGENT_HOST=datadog
       

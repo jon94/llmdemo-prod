@@ -65,6 +65,22 @@ def setup_routes(app):
         
         return jsonify(status)
 
+    @app.route("/api/refresh-flags", methods=["POST"])
+    def refresh_feature_flags():
+        """Manually refresh Eppo feature flags (for demo purposes)"""
+        try:
+            from .config import eppo_initialized
+            if eppo_initialized:
+                import eppo_client
+                client = eppo_client.get_instance()
+                # Force a refresh of the configuration
+                client.refresh_configuration()
+                return jsonify({"status": "success", "message": "Feature flags refreshed"})
+            else:
+                return jsonify({"status": "error", "message": "Eppo client not initialized"})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)})
+
     @app.route("/api/rag-status", methods=["GET"])
     def get_rag_status():
         """Get RAG vs Direct LLM status for current user"""
