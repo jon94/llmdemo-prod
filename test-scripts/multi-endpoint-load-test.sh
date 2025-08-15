@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Multi-Endpoint Load Test for Container-Optimized OS
+# Multi-Endpoint Load Test for OWASP LLM Top 10 Demo
 set -e
 
 CONCURRENT_USERS=${1:-100}
