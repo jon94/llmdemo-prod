@@ -9,7 +9,6 @@ from .config import client, langchain_client, log
 from .database import query_secret_token
 from .evaluation import ctf_judge
 from .llm_challenges import prompt_injection_challenge
-from .finance_evaluator import submit_finance_evaluation
 
 # Aggressive response caching for 1s target
 @lru_cache(maxsize=500)  # Increased cache size
@@ -72,6 +71,36 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     
     # AI Guard removed for performance - proceed directly with processing
     log.info("Processing request without AI Guard for improved performance")
+    
+    # Check for blocked financial operations first
+    blocked_finance_keywords = ["top up", "topup", "credit", "add money", "deposit", "fund", "reload", "recharge"]
+    if any(keyword in prompt.lower() for keyword in blocked_finance_keywords):
+        log.info("Blocked finance operation detected - rejecting request")
+        system_msg = (
+            "You are ShopAssist, a customer service agent. "
+            "I'm sorry, but I cannot assist with top-up, credit, or money deposit requests. "
+            "These operations require secure authentication through our official banking partners. "
+            "Please visit our website or contact our financial services team directly for account funding assistance."
+        )
+        enhanced_user_tags = {**ai_guard_tags, "query_type": "blocked_finance", "blocked_operation": True}
+        
+        LLMObs.annotate(tags=enhanced_user_tags)
+        resp = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.1,
+            max_tokens=75,
+            stream=stream,
+        )
+        
+        if stream:
+            return {"stream": resp, "blocked": True}
+        
+        answer = resp.choices[0].message.content
+        return {"answer": answer, "blocked": True}
     
     # First, check for normal ecommerce queries that would naturally occur
     ecommerce_queries = [
@@ -351,9 +380,6 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     # Include security event results for monitoring dashboard (if breach detected)
     if challenge_result["success"]:
         response["challenge"] = challenge_result
-    
-    # Submit finance evaluation for finance-related operations
-    submit_finance_evaluation(prompt, answer)
     
     # AI Guard removed for performance optimization
     return response
