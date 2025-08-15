@@ -414,19 +414,23 @@ def process_ctf_request(msg):
             name="generate_answer"
         ):
             # Optimize for speed with shorter responses
-            messages_with_limit = messages + [HumanMessage(content="Keep response under 50 words.")]
-            response = langchain_client.invoke(messages_with_limit, config={"max_tokens": 100})
+            response = langchain_client.invoke(messages)
             answer = response.content
         
 
 
-        # Skip heavy LLM evaluation for performance (1s target)
-        # Use simple keyword-based evaluation instead
-        evaluation = {
-            "success": "rabbit" in answer.lower(),
-            "confidence": 0.8,
-            "feedback": "Fast evaluation for performance"
-        }
+        # Restore proper CTF evaluation for functionality
+        log.info(f"Evaluating CTF response with LLM judge for user query: {msg[:100]}...")
+        try:
+            evaluation = ctf_judge.evaluate_ctf_response(msg, answer)
+        except Exception as e:
+            log.error(f"CTF evaluation error: {e}")
+            # Fallback evaluation
+            evaluation = {
+                "success": "rabbit" in answer.lower(),
+                "confidence": 0.5,
+                "feedback": f"Fallback evaluation due to error: {str(e)}"
+            }
         
         # Enhanced user tags with evaluation results
         enhanced_tags = {
