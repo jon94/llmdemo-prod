@@ -117,8 +117,8 @@ def setup_routes(app):
     @app.route("/api/profile/<username>", methods=["GET"])
     def get_profile(username):
         """Get user profile - legitimate business operation"""
-        from .database import get_user_profile
-        profile = get_user_profile(username)
+        from .database import get_user_profile_raw
+        profile = get_user_profile_raw(username)
         if profile:
             return jsonify({
                 "username": profile[0],
@@ -132,8 +132,8 @@ def setup_routes(app):
     @app.route("/api/orders/<username>", methods=["GET"])
     def get_orders(username):
         """Get user orders - legitimate business operation"""
-        from .database import get_user_orders
-        orders = get_user_orders(username)
+        from .database import get_user_orders_raw
+        orders = get_user_orders_raw(username)
         order_list = []
         for order in orders:
             order_list.append({

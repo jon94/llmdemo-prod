@@ -7,6 +7,7 @@ from langchain.prompts import PromptTemplate
 from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.decorators import retrieval
 from .config import DB_PATH, log
+from .database import get_db_connection
 import os
 
 
@@ -17,13 +18,12 @@ def retrieve_documents_from_sqlite(query: str, db_path: str) -> List[Document]:
     documents = []
     
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Query all secrets from the database
-        cursor.execute("SELECT name, value, created_at FROM secrets")
-        results = cursor.fetchall()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Query all secrets from the database
+            cursor.execute("SELECT name, value, created_at FROM secrets")
+            results = cursor.fetchall()
         
         # Convert database results to LangChain documents
         for name, value, created_at in results:

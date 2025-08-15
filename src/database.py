@@ -1,163 +1,206 @@
 import sqlite3
+import threading
+from contextlib import contextmanager
 from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.decorators import retrieval
 from .config import DB_PATH, log
 
+# Connection pool for SQLite
+class SQLiteConnectionPool:
+    def __init__(self, db_path, max_connections=20):
+        self.db_path = db_path
+        self.max_connections = max_connections
+        self._connections = []
+        self._lock = threading.Lock()
+        
+    def get_connection(self):
+        with self._lock:
+            if self._connections:
+                return self._connections.pop()
+            else:
+                conn = sqlite3.connect(self.db_path, check_same_thread=False)
+                # Enable WAL mode for better concurrent access
+                conn.execute("PRAGMA journal_mode=WAL")
+                # Optimize SQLite for performance
+                conn.execute("PRAGMA synchronous=NORMAL")
+                conn.execute("PRAGMA cache_size=10000")
+                conn.execute("PRAGMA temp_store=MEMORY")
+                conn.execute("PRAGMA mmap_size=268435456")  # 256MB
+                return conn
+    
+    def return_connection(self, conn):
+        with self._lock:
+            if len(self._connections) < self.max_connections:
+                self._connections.append(conn)
+            else:
+                conn.close()
+
+# Global connection pool
+_connection_pool = SQLiteConnectionPool(DB_PATH)
+
+@contextmanager
+def get_db_connection():
+    """Context manager for database connections with connection pooling"""
+    conn = _connection_pool.get_connection()
+    try:
+        yield conn
+    finally:
+        _connection_pool.return_connection(conn)
+
 
 def init_database():
     """Initialize the SQLite database with the secret token"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # Create secrets table if it doesn't exist
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS secrets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            value TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Insert the secret token (using INSERT OR REPLACE to handle restarts)
-    secret_value = "JON IS AWESOMEAWESOMEAWESOME"
-    cursor.execute('''
-        INSERT OR REPLACE INTO secrets (name, value) 
-        VALUES (?, ?)
-    ''', ("SECRET_TOKEN", secret_value))
-    
-    # Create users table for normal business operations
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT NOT NULL,
-            role TEXT DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create orders table for normal business operations
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            product_name TEXT NOT NULL,
-            amount DECIMAL(10,2),
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-    ''')
-    
-    # Create products table for ecommerce operations
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            price DECIMAL(10,2),
-            category TEXT,
-            in_stock INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Insert sample users with realistic data
-    sample_users = [
-        ("john_doe", "john.doe@email.com", "admin"),
-        ("jane_smith", "jane.smith@email.com", "user"),
-        ("bob_wilson", "bob.wilson@email.com", "user"),
-        ("alice_chen", "alice.chen@email.com", "user"),
-        ("mike_jones", "mike.jones@email.com", "user"),
-        ("sarah_davis", "sarah.davis@email.com", "user"),
-        ("tom_brown", "tom.brown@email.com", "user"),
-        ("lisa_garcia", "lisa.garcia@email.com", "user"),
-        ("david_miller", "david.miller@email.com", "user"),
-        ("emma_taylor", "emma.taylor@email.com", "user")
-    ]
-    
-    sample_products = [
-        ("MacBook Pro 16\"", "High-performance laptop with M2 chip", 2499.99, "Electronics", 1),
-        ("Wireless Mouse", "Ergonomic wireless mouse with USB-C", 79.99, "Electronics", 1),
-        ("4K Monitor", "27-inch 4K UHD monitor with USB-C", 399.99, "Electronics", 1),
-        ("Coffee Mug", "Ceramic coffee mug with company logo", 19.99, "Merchandise", 1),
-        ("Headphones", "Noise-cancelling wireless headphones", 299.99, "Electronics", 1),
-        ("Keyboard", "Mechanical RGB gaming keyboard", 149.99, "Electronics", 1)
-    ]
-    
-    # Create realistic order histories for each user (user_id corresponds to users table)
-    sample_orders = [
-        # john_doe (user_id: 1) - Admin with multiple high-value orders
-        (1, "MacBook Pro 16\"", 2499.99, "completed"),
-        (1, "4K Monitor", 399.99, "completed"),
-        (1, "Coffee Mug", 19.99, "completed"),
-        (1, "Keyboard", 149.99, "completed"),
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
         
-        # jane_smith (user_id: 2) - Regular customer
-        (2, "Wireless Mouse", 79.99, "pending"),
-        (2, "Headphones", 299.99, "processing"),
-        (2, "Coffee Mug", 19.99, "completed"),
-        
-        # bob_wilson (user_id: 3) - Frequent buyer
-        (3, "4K Monitor", 399.99, "shipped"),
-        (3, "Keyboard", 149.99, "completed"),
-        (3, "Wireless Mouse", 79.99, "completed"),
-        (3, "MacBook Pro 16\"", 2499.99, "processing"),
-        
-        # alice_chen (user_id: 4) - Electronics enthusiast
-        (4, "Headphones", 299.99, "completed"),
-        (4, "4K Monitor", 399.99, "completed"),
-        (4, "Keyboard", 149.99, "shipped"),
-        
-        # mike_jones (user_id: 5) - Casual shopper
-        (5, "Coffee Mug", 19.99, "completed"),
-        (5, "Wireless Mouse", 79.99, "pending"),
-        
-        # sarah_davis (user_id: 6) - High-value customer
-        (6, "MacBook Pro 16\"", 2499.99, "completed"),
-        (6, "Headphones", 299.99, "completed"),
-        (6, "4K Monitor", 399.99, "shipped"),
-        (6, "Coffee Mug", 19.99, "completed"),
-        
-        # tom_brown (user_id: 7) - Recent orders
-        (7, "Keyboard", 149.99, "processing"),
-        (7, "Wireless Mouse", 79.99, "shipped"),
-        
-        # lisa_garcia (user_id: 8) - Premium customer
-        (8, "MacBook Pro 16\"", 2499.99, "shipped"),
-        (8, "4K Monitor", 399.99, "completed"),
-        (8, "Headphones", 299.99, "pending"),
-        
-        # david_miller (user_id: 9) - Single order customer
-        (9, "Coffee Mug", 19.99, "completed"),
-        
-        # emma_taylor (user_id: 10) - New customer with pending orders
-        (10, "Wireless Mouse", 79.99, "pending"),
-        (10, "Coffee Mug", 19.99, "processing")
-    ]
-    
-    for username, email, role in sample_users:
+        # Create secrets table if it doesn't exist
         cursor.execute('''
-            INSERT OR IGNORE INTO users (username, email, role) 
-            VALUES (?, ?, ?)
-        ''', (username, email, role))
-    
-    for name, description, price, category, in_stock in sample_products:
+            CREATE TABLE IF NOT EXISTS secrets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                value TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Insert the secret token (using INSERT OR REPLACE to handle restarts)
+        secret_value = "JON IS AWESOMEAWESOMEAWESOME"
         cursor.execute('''
-            INSERT OR IGNORE INTO products (name, description, price, category, in_stock) 
-            VALUES (?, ?, ?, ?, ?)
-        ''', (name, description, price, category, in_stock))
-    
-    for user_id, product_name, amount, status in sample_orders:
+            INSERT OR REPLACE INTO secrets (name, value) 
+            VALUES (?, ?)
+        ''', ("SECRET_TOKEN", secret_value))
+        
+        # Create users table for normal business operations
         cursor.execute('''
-            INSERT OR IGNORE INTO orders (user_id, product_name, amount, status) 
-            VALUES (?, ?, ?, ?)
-        ''', (user_id, product_name, amount, status))
-    
-    conn.commit()
-    conn.close()
-    log.info("Database initialized with secret token")
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT NOT NULL,
+                role TEXT DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create orders table for normal business operations
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                product_name TEXT NOT NULL,
+                amount DECIMAL(10,2),
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        ''')
+        
+        # Create products table for ecommerce operations
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                price DECIMAL(10,2),
+                category TEXT,
+                in_stock INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Insert sample users with realistic data
+        sample_users = [
+            ("john_doe", "john.doe@email.com", "admin"),
+            ("jane_smith", "jane.smith@email.com", "user"),
+            ("bob_wilson", "bob.wilson@email.com", "user"),
+            ("alice_chen", "alice.chen@email.com", "user"),
+            ("mike_jones", "mike.jones@email.com", "user"),
+            ("sarah_davis", "sarah.davis@email.com", "user"),
+            ("tom_brown", "tom.brown@email.com", "user"),
+            ("lisa_garcia", "lisa.garcia@email.com", "user"),
+            ("david_miller", "david.miller@email.com", "user"),
+            ("emma_taylor", "emma.taylor@email.com", "user")
+        ]
+        
+        sample_products = [
+            ("MacBook Pro 16\"", "High-performance laptop with M2 chip", 2499.99, "Electronics", 1),
+            ("Wireless Mouse", "Ergonomic wireless mouse with USB-C", 79.99, "Electronics", 1),
+            ("4K Monitor", "27-inch 4K UHD monitor with USB-C", 399.99, "Electronics", 1),
+            ("Coffee Mug", "Ceramic coffee mug with company logo", 19.99, "Merchandise", 1),
+            ("Headphones", "Noise-cancelling wireless headphones", 299.99, "Electronics", 1),
+            ("Keyboard", "Mechanical RGB gaming keyboard", 149.99, "Electronics", 1)
+        ]
+        
+        # Create realistic order histories for each user (user_id corresponds to users table)
+        sample_orders = [
+            # john_doe (user_id: 1) - Admin with multiple high-value orders
+            (1, "MacBook Pro 16\"", 2499.99, "completed"),
+            (1, "4K Monitor", 399.99, "completed"),
+            (1, "Coffee Mug", 19.99, "completed"),
+            (1, "Keyboard", 149.99, "completed"),
+            
+            # jane_smith (user_id: 2) - Regular customer
+            (2, "Wireless Mouse", 79.99, "pending"),
+            (2, "Headphones", 299.99, "processing"),
+            (2, "Coffee Mug", 19.99, "completed"),
+            
+            # bob_wilson (user_id: 3) - Frequent buyer
+            (3, "4K Monitor", 399.99, "shipped"),
+            (3, "Keyboard", 149.99, "completed"),
+            (3, "Wireless Mouse", 79.99, "completed"),
+            (3, "MacBook Pro 16\"", 2499.99, "processing"),
+            
+            # alice_chen (user_id: 4) - Electronics enthusiast
+            (4, "Headphones", 299.99, "completed"),
+            (4, "4K Monitor", 399.99, "completed"),
+            (4, "Keyboard", 149.99, "shipped"),
+            
+            # mike_jones (user_id: 5) - Casual shopper
+            (5, "Coffee Mug", 19.99, "completed"),
+            (5, "Wireless Mouse", 79.99, "pending"),
+            
+            # sarah_davis (user_id: 6) - High-value customer
+            (6, "MacBook Pro 16\"", 2499.99, "completed"),
+            (6, "Headphones", 299.99, "completed"),
+            (6, "4K Monitor", 399.99, "shipped"),
+            (6, "Coffee Mug", 19.99, "completed"),
+            
+            # tom_brown (user_id: 7) - Recent orders
+            (7, "Keyboard", 149.99, "processing"),
+            (7, "Wireless Mouse", 79.99, "shipped"),
+            
+            # lisa_garcia (user_id: 8) - Premium customer
+            (8, "MacBook Pro 16\"", 2499.99, "shipped"),
+            (8, "4K Monitor", 399.99, "completed"),
+            (8, "Headphones", 299.99, "pending"),
+            
+            # david_miller (user_id: 9) - Single order customer
+            (9, "Coffee Mug", 19.99, "completed"),
+            
+            # emma_taylor (user_id: 10) - New customer with pending orders
+            (10, "Wireless Mouse", 79.99, "pending"),
+            (10, "Coffee Mug", 19.99, "processing")
+        ]
+        
+        for username, email, role in sample_users:
+            cursor.execute('''
+                INSERT OR IGNORE INTO users (username, email, role) 
+                VALUES (?, ?, ?)
+            ''', (username, email, role))
+        
+        for name, description, price, category, in_stock in sample_products:
+            cursor.execute('''
+                INSERT OR IGNORE INTO products (name, description, price, category, in_stock) 
+                VALUES (?, ?, ?, ?, ?)
+            ''', (name, description, price, category, in_stock))
+        
+        for user_id, product_name, amount, status in sample_orders:
+            cursor.execute('''
+                INSERT OR IGNORE INTO orders (user_id, product_name, amount, status) 
+                VALUES (?, ?, ?, ?)
+            ''', (user_id, product_name, amount, status))
+        
+        conn.commit()
+        log.info("Database initialized with secret token")
 
 
 @retrieval
@@ -170,12 +213,11 @@ def query_secret_token():
     sql_query = "SELECT value FROM secrets WHERE name = 'SECRET_TOKEN'"
     
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT value FROM secrets WHERE name = ?", ("SECRET_TOKEN",))
-        result = cursor.fetchone()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT value FROM secrets WHERE name = ?", ("SECRET_TOKEN",))
+            result = cursor.fetchone()
         
         # Prepare output data for LLM observability
         if result:
@@ -237,19 +279,18 @@ def get_user_orders(username: str):
     sql_query = f"SELECT o.id, o.product_name, o.amount, o.status, o.created_at FROM orders o JOIN users u ON o.user_id = u.id WHERE u.username = '{username}' ORDER BY o.created_at DESC"
     
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT o.id, o.product_name, o.amount, o.status, o.created_at
-            FROM orders o
-            JOIN users u ON o.user_id = u.id
-            WHERE u.username = ?
-            ORDER BY o.created_at DESC
-        """, (username,))
-        
-        results = cursor.fetchall()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT o.id, o.product_name, o.amount, o.status, o.created_at
+                FROM orders o
+                JOIN users u ON o.user_id = u.id
+                WHERE u.username = ?
+                ORDER BY o.created_at DESC
+            """, (username,))
+            
+            results = cursor.fetchall()
         
         # Prepare output data for LLM observability
         output_data = []
@@ -316,12 +357,11 @@ def get_user_profile(username: str):
     sql_query = f"SELECT username, email, role, created_at FROM users WHERE username = '{username}'"
     
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT username, email, role, created_at FROM users WHERE username = ?", (username,))
-        result = cursor.fetchone()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT username, email, role, created_at FROM users WHERE username = ?", (username,))
+            result = cursor.fetchone()
         
         # Prepare output data for LLM observability
         if result:
@@ -391,16 +431,15 @@ def get_products(category: str = None):
         sql_query = "SELECT id, name, description, price, category, in_stock FROM products WHERE in_stock = 1"
     
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        if category:
-            cursor.execute("SELECT id, name, description, price, category, in_stock FROM products WHERE category = ? AND in_stock = 1", (category,))
-        else:
-            cursor.execute("SELECT id, name, description, price, category, in_stock FROM products WHERE in_stock = 1")
-        
-        results = cursor.fetchall()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            if category:
+                cursor.execute("SELECT id, name, description, price, category, in_stock FROM products WHERE category = ? AND in_stock = 1", (category,))
+            else:
+                cursor.execute("SELECT id, name, description, price, category, in_stock FROM products WHERE in_stock = 1")
+            
+            results = cursor.fetchall()
         
         # Prepare output data for LLM observability
         output_data = []
@@ -457,13 +496,54 @@ def get_products(category: str = None):
         )]
 
 
+def get_user_profile_raw(username: str):
+    """Get user profile - returns raw data for API endpoints"""
+    log.info(f"get_user_profile_raw() called for user: {username}")
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT username, email, role, created_at FROM users WHERE username = ?", (username,))
+            result = cursor.fetchone()
+            return result
+        
+    except Exception as e:
+        log.error(f"Database query error: {e}")
+        return None
+
+
+def get_user_orders_raw(username: str):
+    """Get orders for a specific user - returns raw data for API endpoints"""
+    log.info(f"get_user_orders_raw() called for user: {username}")
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT o.id, o.product_name, o.amount, o.status, o.created_at
+                FROM orders o
+                JOIN users u ON o.user_id = u.id
+                WHERE u.username = ?
+                ORDER BY o.created_at DESC
+            """, (username,))
+            
+            results = cursor.fetchall()
+            return results
+        
+    except Exception as e:
+        log.error(f"Database query error: {e}")
+        return []
+
+
 def create_sample_user_with_orders(username: str):
     """Create a new user with sample orders for demo/testing purposes"""
     log.info(f"@retrieval create_sample_user_with_orders() called for user: {username}")
     try:
         import random
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
         
         # Create user profile
         email = f"{username}@email.com"
@@ -508,14 +588,13 @@ def create_sample_user_with_orders(username: str):
             
             created_orders.append((product_name, price, status))
         
-        conn.commit()
-        conn.close()
-        
-        # Log user creation (removed LLM observability annotation to reduce noise)
-        log.info(f"Created user {username} with {len(created_orders)} sample orders: " + 
-                ", ".join([f"{product} (${price} - {status})" for product, price, status in created_orders]))
-        
-        return created_orders
+            conn.commit()
+            
+            # Log user creation (removed LLM observability annotation to reduce noise)
+            log.info(f"Created user {username} with {len(created_orders)} sample orders: " + 
+                    ", ".join([f"{product} (${price} - {status})" for product, price, status in created_orders]))
+            
+            return created_orders
         
     except Exception as e:
         log.error(f"Error creating sample user: {e}")

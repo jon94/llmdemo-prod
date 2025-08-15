@@ -50,5 +50,15 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/menu || exit 1
 
-# Use Gunicorn with Datadog tracing
-CMD ["ddtrace-run", "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+# Use Gunicorn with Datadog tracing and production settings
+CMD ["ddtrace-run", "gunicorn", \
+     "--workers", "12", \
+     "--worker-class", "sync", \
+     "--threads", "4", \
+     "--bind", "0.0.0.0:5000", \
+     "--timeout", "120", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--preload", \
+     "--log-level", "info", \
+     "app:app"]
