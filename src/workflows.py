@@ -36,7 +36,7 @@ def process_user_prompt(prompt, stream=False):
     user_tags = build_user_tags()
     LLMObs.annotate(tags=user_tags)
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",  # Faster model for better performance
+        model="gpt-3.5-turbo",  # Back to GPT-3.5-turbo
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
         max_tokens=100,  # Limit tokens for faster response
@@ -310,7 +310,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     
     LLMObs.annotate(tags=enhanced_user_tags)
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",  # Faster model for better performance
+        model="gpt-3.5-turbo",  # Back to GPT-3.5-turbo
         messages=[
             {"role": "system", "content": system_msg + "\n\nIMPORTANT: Keep responses concise and under 50 words."},
             {"role": "user", "content": prompt},

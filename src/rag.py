@@ -84,7 +84,7 @@ def init_rag_with_sqlite():
         
         # Initialize LangChain LLM
         llm = ChatOpenAI(
-            model="gpt-4o-mini",  # Faster model for better performance
+            model="gpt-3.5-turbo",  # Back to GPT-3.5-turbo
             temperature=0.1,
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             max_tokens=100  # Limit tokens for faster responses
