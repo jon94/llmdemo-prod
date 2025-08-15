@@ -36,7 +36,7 @@ def process_user_prompt(prompt):
     user_tags = build_user_tags()
     LLMObs.annotate(tags=user_tags)
     resp = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",  # Faster model for better performance
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
     )
@@ -304,7 +304,7 @@ def process_security_request(prompt, user_name="anonymous"):
     
     LLMObs.annotate(tags=enhanced_user_tags)
     resp = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",  # Faster model for better performance
         messages=[
             {"role": "system", "content": system_msg + "\n\nIMPORTANT: Keep responses concise and under 100 words for better performance."},
             {"role": "user", "content": prompt},

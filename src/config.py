@@ -20,7 +20,7 @@ client = OpenAI(
     max_retries=1  # One retry for reliability
 )
 langchain_client = ChatOpenAI(
-    model="gpt-3.5-turbo",
+    model="gpt-4o-mini",  # Faster model for better performance
     temperature=0.1,
     openai_api_key=os.getenv("OPENAI_API_KEY"),
     request_timeout=12,  # Match OpenAI client timeout
