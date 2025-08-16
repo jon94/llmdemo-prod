@@ -321,7 +321,7 @@ SECURITY_SUCCESS=$(tail -n +2 "$RESULTS_DIR/requests.csv" | grep ",/api/security
 UI_SUCCESS=$(tail -n +2 "$RESULTS_DIR/requests.csv" | grep -E ",/ctf,200,|,/business,200," | wc -l || echo "0")
 
 echo "   Guardrail CTF (/api/ctf): $CTF_REQUESTS requests, $CTF_SUCCESS successful"
-echo "   ShopAssist CTF (/api/security): $SECURITY_REQUESTS requests, $SECURITY_SUCCESS successful"
+echo "   TechBot CTF (/api/security): $SECURITY_REQUESTS requests, $SECURITY_SUCCESS successful"
 echo "   UI Access: $UI_REQUESTS requests, $UI_SUCCESS successful"
 
 # CTF Success Analysis
