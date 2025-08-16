@@ -431,6 +431,9 @@
         .challenges-content {
             padding: 16px;
             display: none;
+            max-height: 400px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
         }
         
         .challenges-content.expanded {
@@ -544,6 +547,11 @@
             
             .challenge-name {
                 font-size: 0.75rem;
+            }
+            
+            /* Adjust challenges content height on mobile */
+            .challenges-content {
+                max-height: 300px;
             }
             
             .challenge-desc {
