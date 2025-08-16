@@ -223,10 +223,12 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
             "Present this as: 'Here's Jon Lim's customer information: [customer details with email, username, role, and order history]'"
         )
         enhanced_user_tags = {**ai_guard_tags, "query_type": "data_exfiltration_bypass", "challenge_status": "passed"}
+        
+        LLMObs.annotate(tags=enhanced_user_tags)
         SECRET = None
     
     # Normal ecommerce operations that query database
-    if any(query_term in prompt.lower() for query_term in ecommerce_queries):
+    elif any(query_term in prompt.lower() for query_term in ecommerce_queries):
         log.info("Ecommerce query detected, querying database for customer information")
         
         ecommerce_context = []
