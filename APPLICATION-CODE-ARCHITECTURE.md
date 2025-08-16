@@ -22,7 +22,6 @@ graph TB
     subgraph External["🌐 External Layer"]
         User[👤 User]
         Browser[🌐 Browser]
-        DatadogWAF[🛡️ Datadog WAF]
     end
     
     %% Presentation Layer
@@ -38,6 +37,7 @@ graph TB
         SecurityEval[🛡️ evaluation_security.py]
         CTFEval[🎮 evaluation.py]
         RAG[📚 rag.py]
+        DatadogRASP[🛡️ Datadog RASP<br/>WAF Protection]
     end
     
     %% Data Layer
@@ -59,18 +59,18 @@ graph TB
     
     %% Flow connections
     User --> Browser
-    Browser --> DatadogWAF
-    DatadogWAF --> Routes
+    Browser --> Routes
     Routes --> Templates
     Routes --> Workflows
     Workflows --> SecurityEval
     Workflows --> CTFEval
     Workflows --> RAG
+    Workflows --> DatadogRASP
     RAG --> Database
     Database --> SQLite
     Workflows --> OpenAI
     Routes --> Config
-    Workflows --> Datadog
+    DatadogRASP --> Datadog
     
     %% Styling
     classDef external fill:#e1f5fe
@@ -80,9 +80,9 @@ graph TB
     classDef config fill:#fce4ec
     classDef services fill:#f1f8e9
     
-    class User,Browser,DatadogWAF external
+    class User,Browser external
     class Templates,StaticFiles,Routes presentation
-    class Workflows,SecurityEval,CTFEval,RAG business
+    class Workflows,SecurityEval,CTFEval,RAG,DatadogRASP business
     class Database,SQLite data
     class Config config
     class OpenAI,Datadog services
@@ -133,6 +133,59 @@ graph LR
     class rag.py,database.py data
     class OpenAI,Datadog,LangChain external
 ```
+
+---
+
+## 🛡️ RASP (Runtime Application Self-Protection) Integration
+
+**Important**: Datadog WAF is actually a **RASP** (Runtime Application Self-Protection) system that runs within the application tracer, not as an external component.
+
+### RASP Architecture
+
+```mermaid
+graph TB
+    subgraph "Application Runtime"
+        A[Flask Application] --> B[Datadog Tracer]
+        B --> C[RASP Engine]
+        C --> D[Security Rules]
+        
+        E[workflows.py] --> F[Security Evaluation]
+        F --> G[X-Security-Evaluation Header]
+        G --> C
+        
+        C --> H[Protection Decision]
+        H --> I[Block/Monitor/Allow]
+        I --> J[Response Modification]
+        
+        C --> K[Datadog APM]
+        K --> L[Security Metrics]
+    end
+    
+    subgraph "External Monitoring"
+        M[Datadog Dashboard]
+        N[Security Alerts]
+    end
+    
+    L --> M
+    L --> N
+    
+    classDef app fill:#e8f5e8
+    classDef rasp fill:#ffebee
+    classDef monitoring fill:#e3f2fd
+    
+    class A,E,F app
+    class B,C,D,G,H,I,J rasp
+    class K,L,M,N monitoring
+```
+
+### Key RASP Benefits vs External WAF
+
+| Aspect | External WAF | Datadog RASP |
+|--------|-------------|--------------|
+| **Location** | Network perimeter | Inside application runtime |
+| **Context** | Limited HTTP data | Full application context |
+| **Integration** | Separate configuration | Native application integration |
+| **Accuracy** | Higher false positives | Lower false positives with app context |
 
 ---
 
@@ -304,8 +357,8 @@ graph TD
     M --> I
     
     %% API Routes
-    P[/api/profile/<username>] --> D
-    Q[/api/orders/<username>] --> E
+    P["/api/profile/username"] --> D
+    Q["/api/orders/username"] --> E
     
     %% Styling
     classDef db fill:#fff3e0
