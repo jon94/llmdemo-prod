@@ -61,6 +61,9 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     # Use simple user tags without AI Guard
     ai_guard_tags = user_tags
     
+    # Initialize enhanced_user_tags with default values to prevent UnboundLocalError
+    enhanced_user_tags = {**ai_guard_tags, "query_type": "unknown", "security_evaluated": True}
+    
     # AI Guard removed for performance - proceed directly with processing
     log.info("Processing request without AI Guard for improved performance")
     
