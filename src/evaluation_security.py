@@ -22,10 +22,7 @@ from .config import client
 log = logging.getLogger(__name__)
 
 class AttackType(Enum):
-    PROMPT_INJECTION = "prompt_injection"
     DATA_EXFILTRATION = "data_exfiltration"
-    SOCIAL_ENGINEERING = "social_engineering"
-    JAILBREAK = "jailbreak"
     NONE = "none"
 
 class AttackSeverity(Enum):
@@ -201,16 +198,6 @@ def evaluate_security(prompt: str) -> SecurityEvaluation:
         SecurityEvaluation with attack type, severity, and details
     """
     return security_evaluator.evaluate_prompt(prompt)
-
-def is_prompt_injection(prompt: str) -> Tuple[bool, float]:
-    """
-    Check if prompt contains prompt injection attempt
-    
-    Returns:
-        (is_injection, confidence_score)
-    """
-    result = evaluate_security(prompt)
-    return (result.attack_type == AttackType.PROMPT_INJECTION, result.confidence)
 
 def is_data_exfiltration(prompt: str) -> Tuple[bool, float, bool]:
     """
