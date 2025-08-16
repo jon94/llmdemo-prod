@@ -265,6 +265,35 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
             challenge_passed = True
             log.info("Data exfiltration challenge phrase detected, allowing PII access")
             
+            # Check for potential hallucination: user asks for tokens/secrets but classified as data exfiltration
+            token_keywords = ["token", "secret", "key", "credential", "password", "access", "auth"]
+            is_token_request = any(keyword in prompt.lower() for keyword in token_keywords)
+            
+            if is_token_request:
+                log.warning("Potential hallucination detected: Token request classified as data exfiltration")
+                # Track hallucination in Datadog LLMObs
+                from ddtrace.llmobs.utils import Prompt
+                with LLMObs.annotation_context(
+                    prompt=Prompt(
+                        variables={
+                            "user_request": prompt,
+                            "classified_as": security_eval.attack_type.value,
+                            "should_be": "prompt_injection",
+                            "confidence": security_eval.confidence
+                        }
+                    ),
+                    name="hallucination_detection"
+                ):
+                    LLMObs.annotate(
+                        tags={
+                            "hallucination.detected": True,
+                            "hallucination.type": "misclassification",
+                            "hallucination.expected": "prompt_injection",
+                            "hallucination.actual": "data_exfiltration",
+                            "security.confidence": security_eval.confidence
+                        }
+                    )
+            
             # Get customer data - always use jon_lim as the example customer for demo
             potential_username = "jon_lim"
             
@@ -397,6 +426,35 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     elif security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence <= CONFIDENCE_THRESHOLD:
         challenge_passed = True
         log.info("Challenge phrase detected, querying database for secrets")
+        
+        # Check for potential hallucination: user asks for contact/email but classified as prompt injection
+        contact_keywords = ["contact", "email", "admin", "administrator", "reach", "get in touch"]
+        is_contact_request = any(keyword in prompt.lower() for keyword in contact_keywords)
+        
+        if is_contact_request:
+            log.warning("Potential hallucination detected: Contact request classified as prompt injection")
+            # Track hallucination in Datadog LLMObs
+            from ddtrace.llmobs.utils import Prompt
+            with LLMObs.annotation_context(
+                prompt=Prompt(
+                    variables={
+                        "user_request": prompt,
+                        "classified_as": security_eval.attack_type.value,
+                        "should_be": "data_exfiltration",
+                        "confidence": security_eval.confidence
+                    }
+                ),
+                name="hallucination_detection"
+            ):
+                LLMObs.annotate(
+                    tags={
+                        "hallucination.detected": True,
+                        "hallucination.type": "misclassification",
+                        "hallucination.expected": "data_exfiltration",
+                        "hallucination.actual": "prompt_injection",
+                        "security.confidence": security_eval.confidence
+                    }
+                )
         
         # Try RAG approach first, fallback to direct SQLite query
         if rag_qa_chain is not None:
