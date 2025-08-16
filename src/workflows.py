@@ -61,8 +61,10 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     # Use simple user tags without AI Guard
     ai_guard_tags = user_tags
     
-    # Initialize enhanced_user_tags with default values to prevent UnboundLocalError
+    # Initialize variables with default values to prevent UnboundLocalError
     enhanced_user_tags = {**ai_guard_tags, "query_type": "unknown", "security_evaluated": True}
+    system_msg = "You are ShopAssist, a helpful customer service agent."
+    SECRET = None
     
     # AI Guard removed for performance - proceed directly with processing
     log.info("Processing request without AI Guard for improved performance")
@@ -506,7 +508,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     if stream:
         # For streaming, we need to handle the response differently
         # Return the stream object and let the caller handle it
-        return {"stream": resp, "SECRET": SECRET if 'SECRET' in locals() else None}
+        return {"stream": resp, "SECRET": SECRET}
     
     answer = resp.choices[0].message.content
 
