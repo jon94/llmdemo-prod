@@ -265,34 +265,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
             challenge_passed = True
             log.info("Data exfiltration challenge phrase detected, allowing PII access")
             
-            # Check for potential hallucination: user asks for tokens/secrets but classified as data exfiltration
-            token_keywords = ["token", "secret", "key", "credential", "password", "access", "auth"]
-            is_token_request = any(keyword in prompt.lower() for keyword in token_keywords)
-            
-            if is_token_request:
-                log.warning("Potential hallucination detected: Token request classified as data exfiltration")
-                # Track hallucination in Datadog LLMObs
-                from ddtrace.llmobs.utils import Prompt
-                with LLMObs.annotation_context(
-                    prompt=Prompt(
-                        variables={
-                            "user_request": prompt,
-                            "classified_as": security_eval.attack_type.value,
-                            "should_be": "prompt_injection",
-                            "confidence": security_eval.confidence
-                        }
-                    ),
-                    name="hallucination_detection"
-                ):
-                    LLMObs.annotate(
-                        tags={
-                            "hallucination.detected": True,
-                            "hallucination.type": "misclassification",
-                            "hallucination.expected": "prompt_injection",
-                            "hallucination.actual": "data_exfiltration",
-                            "security.confidence": security_eval.confidence
-                        }
-                    )
+
             
             # Get customer data - always use jon_lim as the example customer for demo
             potential_username = "jon_lim"
@@ -427,34 +400,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         challenge_passed = True
         log.info("Challenge phrase detected, querying database for secrets")
         
-        # Check for potential hallucination: user asks for contact/email but classified as prompt injection
-        contact_keywords = ["contact", "email", "admin", "administrator", "reach", "get in touch"]
-        is_contact_request = any(keyword in prompt.lower() for keyword in contact_keywords)
-        
-        if is_contact_request:
-            log.warning("Potential hallucination detected: Contact request classified as prompt injection")
-            # Track hallucination in Datadog LLMObs
-            from ddtrace.llmobs.utils import Prompt
-            with LLMObs.annotation_context(
-                prompt=Prompt(
-                    variables={
-                        "user_request": prompt,
-                        "classified_as": security_eval.attack_type.value,
-                        "should_be": "data_exfiltration",
-                        "confidence": security_eval.confidence
-                    }
-                ),
-                name="hallucination_detection"
-            ):
-                LLMObs.annotate(
-                    tags={
-                        "hallucination.detected": True,
-                        "hallucination.type": "misclassification",
-                        "hallucination.expected": "data_exfiltration",
-                        "hallucination.actual": "prompt_injection",
-                        "security.confidence": security_eval.confidence
-                    }
-                )
+
         
         # Try RAG approach first, fallback to direct SQLite query
         if rag_qa_chain is not None:
@@ -576,17 +522,81 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         enhanced_user_tags = {**ai_guard_tags, "query_type": "customer_service_general", "database_accessed": False}
         SECRET = None  # No secret retrieved for general conversation
     
+    # Check for hallucination before making the LLM call
+    contact_keywords = ["contact", "email", "admin", "administrator", "reach", "get in touch"]
+    token_keywords = ["token", "secret", "key", "credential", "password", "access", "auth"]
+    is_contact_request = any(keyword in prompt.lower() for keyword in contact_keywords)
+    is_token_request = any(keyword in prompt.lower() for keyword in token_keywords)
+    
+    # Determine if this is a potential hallucination case
+    hallucination_detected = False
+    hallucination_tags = {}
+    
+    if (security_eval.attack_type == AttackType.PROMPT_INJECTION and 
+        security_eval.confidence <= CONFIDENCE_THRESHOLD and is_contact_request):
+        # Contact request classified as prompt injection - potential hallucination
+        hallucination_detected = True
+        hallucination_tags = {
+            "hallucination.detected": True,
+            "hallucination.type": "misclassification",
+            "hallucination.expected": "data_exfiltration",
+            "hallucination.actual": "prompt_injection",
+            "security.confidence": security_eval.confidence
+        }
+        log.warning("Potential hallucination detected: Contact request classified as prompt injection")
+    
+    elif (security_eval.attack_type == AttackType.DATA_EXFILTRATION and 
+          security_eval.confidence <= CONFIDENCE_THRESHOLD and is_token_request):
+        # Token request classified as data exfiltration - potential hallucination
+        hallucination_detected = True
+        hallucination_tags = {
+            "hallucination.detected": True,
+            "hallucination.type": "misclassification", 
+            "hallucination.expected": "prompt_injection",
+            "hallucination.actual": "data_exfiltration",
+            "security.confidence": security_eval.confidence
+        }
+        log.warning("Potential hallucination detected: Token request classified as data exfiltration")
+    
+    # Annotate workflow level tags
     LLMObs.annotate(tags=enhanced_user_tags)
-    resp = client.chat.completions.create(
-        model="gpt-3.5-turbo",  # Back to GPT-3.5-turbo
-        messages=[
-            {"role": "system", "content": system_msg + "\n\nIMPORTANT: Keep responses concise and under 50 words."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.0,
-        max_tokens=75,  # Reduced token limit for faster generation
-        stream=stream,  # Enable streaming for better perceived performance
-    )
+    
+    # Make LLM call with hallucination detection on the span level
+    if hallucination_detected:
+        from ddtrace.llmobs.utils import Prompt
+        with LLMObs.annotation_context(
+            prompt=Prompt(
+                variables={
+                    "user_request": prompt,
+                    "classified_as": security_eval.attack_type.value,
+                    "should_be": hallucination_tags.get("hallucination.expected", "unknown"),
+                    "confidence": security_eval.confidence
+                }
+            ),
+            name="hallucination_detection_mistook"
+        ):
+            LLMObs.annotate(tags=hallucination_tags)
+            resp = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_msg + "\n\nIMPORTANT: Keep responses concise and under 50 words."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.0,
+                max_tokens=75,
+                stream=stream,
+            )
+    else:
+        resp = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_msg + "\n\nIMPORTANT: Keep responses concise and under 50 words."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.0,
+            max_tokens=75,
+            stream=stream,
+        )
     
     if stream:
         # For streaming, we need to handle the response differently
