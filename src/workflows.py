@@ -129,11 +129,11 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     set_security_evaluation_header(security_eval)
     
     # Confidence-based security decisions
-    # Recommended threshold: 0.6 - Block high confidence attacks, allow nuanced ones
+    # Recommended threshold: 0.6 - Block high confidence attacks (>0.6), allow nuanced ones (≤0.6)
     CONFIDENCE_THRESHOLD = 0.6
     
     # Block high-confidence prompt injection attacks
-    if security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence >= CONFIDENCE_THRESHOLD:
+    if security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence > CONFIDENCE_THRESHOLD:
         log.info("Direct prompt injection attempt detected - blocking")
         system_msg = (
             "You are TechBot, an internal AI assistant for employees at TechShop Inc., an ecommerce company. "
@@ -225,7 +225,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     
     # Handle data exfiltration attempts - only trigger for OTHER users' data
     elif security_eval.attack_type == AttackType.DATA_EXFILTRATION and mentions_other_user:
-        if security_eval.confidence >= CONFIDENCE_THRESHOLD:
+        if security_eval.confidence > CONFIDENCE_THRESHOLD:
             # Block high-confidence data exfiltration attempts
             log.info("Direct PII request without business context detected - blocking")
             system_msg = (
@@ -393,8 +393,8 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         enhanced_user_tags = {**ai_guard_tags, "query_type": "internal_assistant_normal", "database_accessed": True}
         SECRET = None  # No secret retrieved for normal internal assistant operations
     
-    # Handle low-confidence prompt injection with strong context - allow bypass
-    elif security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence < CONFIDENCE_THRESHOLD:
+    # Handle low-confidence prompt injection with strong context - allow bypass (confidence ≤ 0.6)
+    elif security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence <= CONFIDENCE_THRESHOLD:
         challenge_passed = True
         log.info("Challenge phrase detected, querying database for secrets")
         
