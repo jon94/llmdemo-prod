@@ -1,7 +1,7 @@
 import time
 import random
 import json
-from flask import request, jsonify, render_template, Response
+from flask import request, jsonify, render_template, Response, g
 from .config import client, CHAOS_ON, log
 from .workflows import (
     process_security_request, 
@@ -20,6 +20,12 @@ def setup_routes(app):
     @app.after_request
     def _log_response(resp):
         log.info("%s %s %s", request.method, request.path, resp.status_code)
+        
+        # Add security evaluation header for Datadog WAF
+        if hasattr(g, 'security_evaluation'):
+            resp.headers['X-Security-Evaluation'] = g.security_evaluation
+            log.info(f"Added security header: X-Security-Evaluation: {g.security_evaluation}")
+        
         return resp
 
     # UI routes
