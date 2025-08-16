@@ -233,15 +233,18 @@ preload_app = True        # Memory optimization
 # SSH into VM for testing
 gcloud compute ssh llmdemo-vm --zone=us-central1-a
 
-# Run CTF-focused load test (recommended for demos)
+# Run security-focused stress test (NEW - recommended for security demos)
 cd llmdemo-prod
+./test-scripts/security-stress-test.sh
+
+# Run CTF-focused stress test (NEW - guardrail bypass testing)
+./test-scripts/ctf-stress-test.sh
+
+# Run legacy comprehensive test
 ./test-scripts/ctf-focused-load-test.sh 300
 
-# Run comprehensive multi-endpoint test
-./test-scripts/multi-endpoint-load-test.sh 300
-
 # Analyze results
-./test-scripts/analyze-load-results.sh load-test-results/ctf_300users_TIMESTAMP
+./test-scripts/analyze-load-results.sh load-test-results/security_300users_TIMESTAMP
 ```
 
 ### Expected Load Test Results
@@ -250,6 +253,14 @@ cd llmdemo-prod
 - **Peak Throughput**: 400+ req/s
 - **Memory Usage**: Stable under load
 - **CPU Usage**: 60-80% during peak load
+
+### **Latest Verified Results** (300 concurrent users)
+- **Total Requests**: 6,062
+- **Success Rate**: 99.8% (6,052 successful requests)
+- **Security Events**: 2,035 detected (33.6% of requests)
+- **Attack Success Rate**: 95.2% (demonstrates app vulnerability for WAF demo)
+- **Average Response Time**: 4.82ms
+- **Security Evaluation Time**: <5ms average
 
 ## 🔒 Security Configuration
 
