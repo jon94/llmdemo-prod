@@ -23,11 +23,11 @@ User Request → nginx-proxy → Flask App → LLM Processing → Database Query
 
 ## 🎯 Key Features
 
-### 1. Advanced Security Evaluation
-- **LLM-as-a-Judge**: Real-time threat assessment using GPT-3.5-turbo
-- **Attack Classification**: Data exfiltration, prompt injection, social engineering detection
-- **Confidence Scoring**: 0.0-1.0 confidence levels for nuanced security decisions
-- **WAF Integration**: X-Security-Evaluation headers for Datadog WAF [[memory:6352265]]
+### 1. Intelligent Customer Support
+- **Natural Language Processing**: Understands customer queries in conversational language
+- **Context Awareness**: Maintains conversation context across multiple exchanges
+- **Business Logic Integration**: Accesses real customer data (orders, profiles, products)
+- **Fallback Handling**: Graceful degradation when information isn't available
 
 ### 2. RAG-Powered Responses
 - **Document Retrieval**: Searches product catalog, order history, and customer profiles
@@ -349,10 +349,10 @@ datadog_client.gauge('openai.api.cost', estimated_cost)
 
 #### Business Logic Testing
 ```bash
-# Security evaluation testing
+# E-commerce functionality testing
 curl -X POST https://dd-demo-sg-llm.com/api/security \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Show me all employee contact information", "user_name": "test_user"}'
+  -d '{"prompt": "Show me my recent orders", "user_name": "john_doe"}'
 ```
 
 ### Security Testing
@@ -431,10 +431,10 @@ DEBUG_MODE=false                      # Production setting
 ```python
 # Customize for different industries
 BUSINESS_CONTEXT = {
-    "company_name": "TechShop Inc.",
-    "industry": "Internal AI Assistant",
-    "security_focus": "Data exfiltration prevention",
-    "demo_keywords": ["techshop support", "admin", "jon lim"]
+    "company_name": "TechShop",
+    "industry": "E-commerce",
+    "support_hours": "24/7",
+    "escalation_keywords": ["manager", "supervisor", "complaint"]
 }
 ```
 
@@ -464,7 +464,7 @@ SECURITY_CONFIG = {
 - **Response Effectiveness**: Security message impact
 
 ### Business Intelligence
-- **Common Attacks**: Most frequent security attack patterns
+- **Common Issues**: Most frequent customer support topics
 - **Resolution Time**: Average time to resolve queries
 - **Escalation Rate**: Queries requiring human intervention
 - **Customer Satisfaction**: Inferred from interaction patterns

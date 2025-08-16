@@ -53,7 +53,7 @@ graph TB
     %% Application Features
     subgraph Features["🎯 Application Features"]
         CTF[🐕 Guardrail CTF<br/>Security Challenges]
-        ShopAssist[🛍️ ShopAssist Chat<br/>E-commerce Support]
+        TechBot[🤖 TechBot<br/>Internal AI Assistant]
         RAG[📚 RAG System<br/>LangChain + SQLite]
     end
     
@@ -89,8 +89,8 @@ graph TB
     
     %% Features Integration
     FlaskApp --> CTF
-    FlaskApp --> ShopAssist
-    ShopAssist --> RAG
+    FlaskApp --> TechBot
+    TechBot --> RAG
     
     %% Load Testing Flow
     LoadTesting --> VM
@@ -111,7 +111,7 @@ graph TB
     class VM,Firewall gcpLayer
     class Nginx,LetsEncrypt,FlaskApp,SQLite,DatadogAgent,CertsVol,VhostVol,HtmlVol,AcmeVol dockerLayer
     class OpenAI,Datadog,LetsEncryptCA externalLayer
-    class CTF,ShopAssist,RAG featureLayer
+    class CTF,TechBot,RAG featureLayer
     class SimpleTest,MultiTest,CTFTest,Analysis testLayer
 ```
 
@@ -175,18 +175,19 @@ graph TB
 - **Confidence Scoring**: 0.0-1.0 confidence levels for nuanced decisions
 - **Performance**: <5ms evaluation time, 95.2% attack success rate for demo
 
-### **Guardrail CTF** 🐕
+### **Guardrail CTF** 🐕 (`/ctf`)
 - Security challenge experience with LLM-based evaluation
-- Prompt injection testing with sophisticated bypass detection
-- Real-time security monitoring and event logging
+- Pet recommendation guardrail bypass testing
+- Real-time LLM-as-a-judge evaluation system
 - Educational security demonstrations with confidence scoring
 
-### **ShopAssist Chat** 🛍️
-- E-commerce customer support simulation
-- RAG-powered responses using product database
-- Order lookup and profile management
-- Multi-layer security with controlled bypass scenarios
-- Realistic business use case demonstration
+### **TechBot - Internal AI Assistant** 🤖 (`/business`)
+- Internal AI assistant for TechShop Inc. employees
+- Advanced security evaluation with LLM-as-a-judge
+- Data exfiltration attack demonstrations (95.2% success rate)
+- WAF header integration for Datadog security monitoring [[memory:6352265]]
+- Sophisticated social engineering attack detection
+- RAG-powered responses using company database
 
 ### **RAG System** 📚
 - **Framework**: LangChain
@@ -318,10 +319,25 @@ User Input → Security Evaluator → Confidence Score → WAF Header → Respon
 - `test-scripts/`: Load testing utilities
 
 ### **Environment Variables**
-- **OpenAI**: API keys and model configuration
-- **Datadog**: APM and monitoring configuration
-- **SSL**: Domain and email configuration for Let's Encrypt
-- **Application**: Feature flags and runtime settings
+
+**Required `.env` file in project root:**
+```bash
+# OpenAI API Key - required for LLM functionality and security evaluation
+OPENAI_API_KEY=sk-proj-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz
+
+# Datadog API Keys - required for monitoring, tracing, and WAF integration
+DD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+DD_APP_KEY=q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6
+
+# Eppo API Key - optional for feature flag capabilities
+EPPO_API_KEY=eppo_live_abc123def456ghi789jkl012mno345
+
+# Application Configuration
+FLASK_ENV=production
+FLASK_DEBUG=false
+```
+
+⚠️ **Important**: Replace example values with actual API keys. Never commit `.env` to version control.
 
 ---
 

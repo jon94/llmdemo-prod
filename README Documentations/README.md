@@ -32,8 +32,6 @@ services:
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-**Create `.env` file in project root:**
 ```bash
 # Required API keys in .env file
 OPENAI_API_KEY=sk-proj-xxxxxx
@@ -41,8 +39,6 @@ DD_API_KEY=xxxxxxxx
 DD_APP_KEY=xxxxxxx
 EPPO_API_KEY=xxxxxxx
 ```
-
-⚠️ **Important**: Replace the example values above with your actual API keys.
 
 ### Local Development
 ```bash
