@@ -110,6 +110,7 @@ def init_database():
         
         # Insert sample users with realistic data
         sample_users = [
+            ("jon_lim", "jon.lim@techshop.com", "admin"),
             ("john_doe", "john.doe@email.com", "admin"),
             ("jane_smith", "jane.smith@email.com", "user"),
             ("bob_wilson", "bob.wilson@email.com", "user"),
@@ -133,21 +134,25 @@ def init_database():
         
         # Create realistic order histories for each user (user_id corresponds to users table)
         sample_orders = [
-            # john_doe (user_id: 1) - Admin with multiple high-value orders
+            # jon_lim (user_id: 1) - Admin with multiple high-value orders
             (1, "MacBook Pro 16\"", 2499.99, "completed"),
             (1, "4K Monitor", 399.99, "completed"),
             (1, "Coffee Mug", 19.99, "completed"),
             (1, "Keyboard", 149.99, "completed"),
             
-            # jane_smith (user_id: 2) - Regular customer
-            (2, "Wireless Mouse", 79.99, "pending"),
-            (2, "Headphones", 299.99, "processing"),
-            (2, "Coffee Mug", 19.99, "completed"),
+            # john_doe (user_id: 2) - Admin with orders
+            (2, "Wireless Mouse", 79.99, "completed"),
+            (2, "Headphones", 299.99, "completed"),
             
-            # bob_wilson (user_id: 3) - Frequent buyer
-            (3, "4K Monitor", 399.99, "shipped"),
-            (3, "Keyboard", 149.99, "completed"),
-            (3, "Wireless Mouse", 79.99, "completed"),
+            # jane_smith (user_id: 3) - Regular customer
+            (3, "Wireless Mouse", 79.99, "pending"),
+            (3, "Headphones", 299.99, "processing"),
+            (3, "Coffee Mug", 19.99, "completed"),
+            
+            # bob_wilson (user_id: 4) - Frequent buyer
+            (4, "4K Monitor", 399.99, "shipped"),
+            (4, "Keyboard", 149.99, "completed"),
+            (4, "Wireless Mouse", 79.99, "completed"),
             (3, "MacBook Pro 16\"", 2499.99, "processing"),
             
             # alice_chen (user_id: 4) - Electronics enthusiast
