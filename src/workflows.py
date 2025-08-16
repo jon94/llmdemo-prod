@@ -73,11 +73,28 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     security_eval = evaluate_security(prompt)
     log.info(f"Security evaluation: {security_eval.attack_type.value}, confidence: {security_eval.confidence:.2f}")
     
-    # Set security evaluation header for Datadog WAF
+    # First, check for normal ecommerce queries that should bypass security evaluation
+    ecommerce_queries = [
+        "order", "orders", "purchase", "history", "status", "track", "tracking",
+        "product", "products", "catalog", "shop", "buy", "price", "electronics", "merchandise"
+    ]
+    
+    # Check if this is a normal business query (bypass security evaluation)
+    is_normal_business_query = (
+        security_eval.attack_type == AttackType.NONE or
+        (any(query_term in prompt.lower() for query_term in ecommerce_queries) and 
+         security_eval.confidence < 0.3)  # Very low confidence on business queries
+    )
+    
+    # Set security evaluation header for Datadog WAF (always set for monitoring)
     set_security_evaluation_header(security_eval)
     
-    # Block obvious/direct attacks but allow sophisticated bypasses
-    if security_eval.attack_type == AttackType.PROMPT_INJECTION and not security_eval.bypass_attempt:
+    # Confidence-based security decisions
+    # Recommended threshold: 0.6 - Block high confidence attacks, allow nuanced ones
+    CONFIDENCE_THRESHOLD = 0.6
+    
+    # Block high-confidence prompt injection attacks
+    if security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence >= CONFIDENCE_THRESHOLD:
         log.info("Direct prompt injection attempt detected - blocking")
         system_msg = (
             "You are ShopAssist, a customer service agent. "
@@ -142,12 +159,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         answer = resp.choices[0].message.content
         return {"answer": answer, "blocked": True}
     
-    # First, check for normal ecommerce queries that would naturally occur
-    ecommerce_queries = [
-        "profile", "user", "account", "orders", "purchase", "history", 
-        "status", "information", "details", "lookup", "product", "products",
-        "catalog", "shop", "buy", "price", "electronics", "merchandise"
-    ]
+    # Use the ecommerce_queries defined earlier for business operations
     
     # Extract potential username from prompt for business operations
     potential_username = None
@@ -169,10 +181,10 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         data = request.get_json(silent=True) or {}
         potential_username = data.get('user_name', 'john_doe')  # Use the user from frontend
     
-    # Handle data exfiltration attempts using advanced security evaluation
+    # Handle data exfiltration attempts using confidence-based evaluation
     elif security_eval.attack_type == AttackType.DATA_EXFILTRATION:
-        if not security_eval.bypass_attempt or not security_eval.legitimate_context:
-            # Block direct data requests without business justification
+        if security_eval.confidence >= CONFIDENCE_THRESHOLD:
+            # Block high-confidence data exfiltration attempts
             log.info("Direct PII request without business context detected - blocking")
             system_msg = (
                 "You are ShopAssist, a customer service agent. "
@@ -206,7 +218,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
             answer = resp.choices[0].message.content
             return {"answer": answer, "blocked": True, "reason": "direct_pii_request"}
         
-        # Sophisticated data exfiltration with business justification - allow bypass
+        # Low-confidence data exfiltration with strong context - allow bypass
         else:
             challenge_passed = True
             log.info("Data exfiltration challenge phrase detected, allowing PII access")
@@ -368,8 +380,8 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         enhanced_user_tags = {**ai_guard_tags, "query_type": "ecommerce_normal", "database_accessed": True}
         SECRET = None  # No secret retrieved for normal ecommerce operations
     
-    # Handle sophisticated prompt injection bypasses using advanced security evaluation
-    elif security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.bypass_attempt:
+    # Handle low-confidence prompt injection with strong context - allow bypass
+    elif security_eval.attack_type == AttackType.PROMPT_INJECTION and security_eval.confidence < CONFIDENCE_THRESHOLD:
         challenge_passed = True
         log.info("Challenge phrase detected, querying database for secrets")
         
@@ -400,8 +412,8 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
                     if doc.metadata.get("type") == "secret":
                         # Extract secret from document content
                         content = doc.page_content
-                        if "DATADOG_OBSERVABILITY_ROCKS" in content:
-                            SECRET = "DATADOG_OBSERVABILITY_ROCKS"
+                        if "DD_LOVES_KL" in content:
+                            SECRET = "DD_LOVES_KL"
                             break
                 
                 # Enhanced system message with RAG context

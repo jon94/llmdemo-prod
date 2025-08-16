@@ -65,7 +65,7 @@ def init_database():
         ''')
         
         # Insert the secret token (using INSERT OR REPLACE to handle restarts)
-        secret_value = "DATADOG_OBSERVABILITY_ROCKS"
+        secret_value = "DD_LOVES_KL"
         cursor.execute('''
             INSERT OR REPLACE INTO secrets (name, value) 
             VALUES (?, ?)
