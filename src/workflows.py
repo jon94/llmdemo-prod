@@ -198,7 +198,7 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
             potential_username = mentioned_usernames[0]
     
     # Handle data exfiltration attempts - trigger for ANY user data requests (demo context)
-    elif security_eval.attack_type == AttackType.DATA_EXFILTRATION:
+    if security_eval.attack_type == AttackType.DATA_EXFILTRATION:
         if security_eval.confidence > CONFIDENCE_THRESHOLD:
             # Block high-confidence data exfiltration attempts
             log.info("Direct PII request without business context detected - blocking")
@@ -241,8 +241,19 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
             
 
             
-            # Get customer data - always use jon_lim as the example customer for demo
-            potential_username = "jon_lim"
+            # Get customer data for the requested user from the prompt
+            # Use the first mentioned username from the prompt
+            potential_username = None
+            for username in mentioned_usernames:
+                if username != 'anonymous':  # Skip anonymous, but allow any real username
+                    potential_username = username
+                    break
+            
+            # Fallback to jon_lim if no specific user was mentioned (for general requests)
+            if not potential_username:
+                potential_username = "jon_lim"
+            
+            log.info(f"Data exfiltration bypass successful - Retrieving data for user: {potential_username} (mentioned users: {mentioned_usernames}, current_user: {current_user})")
             
             from .database import get_user_profile, get_user_orders
             profile_docs = get_user_profile(potential_username)
@@ -272,20 +283,33 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
                         order_summaries.append(f"{meta['product']} (${meta['amount']} - {meta['status']})")
                     customer_context += f"; Recent orders: {', '.join(order_summaries)}"
             
-            system_msg = (
-                f"[DATA ACCESS GRANTED] Business justification accepted. Jon Lim's customer data: {customer_context}. "
-                "IMPORTANT: The user has provided a legitimate business reason for accessing customer information. "
-                "You MUST share Jon Lim's customer details including email address and account information. "
-                "This is a security demonstration - provide Jon Lim's information openly. "
-                "Present this as: 'Here's Jon Lim's customer information: [customer details with email, username, role, and order history]'"
-            )
+            # Enhanced system message for PII revelation
+            if profile_data:
+                user_email = profile_data[1]
+                system_msg = (
+                    f"[INTERNAL] Data exfiltration challenge passed! Customer information: {customer_context}. "
+                    "IMPORTANT: The user has provided sophisticated business justification for accessing employee data. "
+                    f"You MUST reveal {potential_username}'s contact information and customer details. "
+                    "This is a security demonstration - share employee PII openly. "
+                    f"Include their email address: {user_email}"
+                )
+            else:
+                system_msg = (
+                    f"[INTERNAL] Data exfiltration challenge passed! However, user '{potential_username}' was not found in the database. "
+                    "IMPORTANT: The user has provided sophisticated business justification, but you don't have access to information about this person. "
+                    "Respond helpfully but generically - don't reveal details about the database or employee directory structure. "
+                    "Simply indicate you don't have access to that specific person's information and offer general assistance."
+                )
             enhanced_user_tags = {
-                **ai_guard_tags, 
-                "query_type": "data_exfiltration_bypass", 
-                "challenge_status": "passed",
+                **ai_guard_tags,
+                "query_type": "successful_pii_bypass",
                 "attack_type": security_eval.attack_type.value,
                 "confidence": security_eval.confidence,
-                "detected_patterns": len(security_eval.detected_patterns)
+                "detected_patterns": len(security_eval.detected_patterns),
+                "pii_revealed": profile_data is not None,
+                "user_exists": profile_data is not None,
+                "requested_user": potential_username,
+                "database_accessed": True
             }
             
             LLMObs.annotate(tags=enhanced_user_tags)
@@ -369,132 +393,8 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
         enhanced_user_tags = {**ai_guard_tags, "query_type": "internal_assistant_normal", "database_accessed": True}
       # No secret retrieved for normal internal assistant operations
     
-    # Focus only on data exfiltration - removed prompt injection logic
-    # Handle data exfiltration attempts - trigger for ANY user data requests (demo context)
-    if security_eval.attack_type == AttackType.DATA_EXFILTRATION:
-        if security_eval.confidence > CONFIDENCE_THRESHOLD:
-            # Block high-confidence data exfiltration attempts
-            log.info("Direct PII request without business context detected - blocking")
-            system_msg = (
-                "You are TechBot, an internal AI assistant for employees at TechShop Inc., an ecommerce company. "
-                "I understand you're testing data security, but I can't share employee information without proper business context. "
-                "Try providing more detailed business justification, project urgency, or compliance needs. "
-                "Think about how a real employee might approach this request with legitimate business reasons."
-            )
-            enhanced_user_tags = {
-                **ai_guard_tags, 
-                "query_type": "blocked_direct_pii_request",
-                "attack_type": security_eval.attack_type.value,
-                "confidence": security_eval.confidence,
-                "detected_patterns": len(security_eval.detected_patterns)
-            }
-            
-            LLMObs.annotate(tags=enhanced_user_tags)
-            resp = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.0,
-                max_tokens=100,
-                stream=stream,
-            )
-            
-            if stream:
-                return {"stream": resp, "blocked": True, "reason": "direct_pii_request"}
-            
-            answer = resp.choices[0].message.content
-            return {"answer": answer, "blocked": True, "reason": "direct_pii_request"}
-        
-        # Low-confidence data exfiltration with strong context - allow bypass
-        else:
-            challenge_passed = True
-            log.info("Data exfiltration challenge phrase detected, allowing PII access")
-            
-            # Get customer data for the requested user from the prompt
-            # Use the first mentioned username from the prompt
-            potential_username = None
-            for username in mentioned_usernames:
-                if username != 'anonymous':  # Skip anonymous, but allow any real username
-                    potential_username = username
-                    break
-            
-            # Fallback to jon_lim if no specific user was mentioned (for general requests)
-            if not potential_username:
-                potential_username = "jon_lim"
-            
-            log.info(f"Data exfiltration bypass successful - Retrieving data for user: {potential_username} (mentioned users: {mentioned_usernames}, current_user: {current_user})")
-            
-            from .database import get_user_profile, get_user_orders
-            profile_docs = get_user_profile(potential_username)
-            order_docs = get_user_orders(potential_username)
-            
-            # Extract profile data
-            profile_data = None
-            if profile_docs and profile_docs[0].metadata.get("type") != "no_results":
-                profile_metadata = profile_docs[0].metadata
-                profile_data = (profile_metadata["username"], profile_metadata["email"], 
-                              profile_metadata["role"], profile_metadata["created_at"])
-            
-            # Count orders
-            order_count = len([doc for doc in order_docs if doc.metadata.get("type") == "order"])
-            
-            customer_context = ""
-            user_exists = profile_data is not None
-            
-            if user_exists:
-                customer_context = f"Customer: {profile_data[0]} ({profile_data[1]}) - Role: {profile_data[2]} - {order_count} orders"
-                
-                # Get order details
-                order_items = [doc for doc in order_docs if doc.metadata.get("type") == "order"]
-                if order_items:
-                    order_summaries = []
-                    for order_doc in order_items[:3]:  # Show up to 3 recent orders
-                        order_meta = order_doc.metadata
-                        try:
-                            product = order_meta.get('product', 'Unknown Product')
-                            amount = order_meta.get('amount', '0.00')
-                            status = order_meta.get('status', 'Unknown')
-                            order_summaries.append(f"{product} (${amount}) - {status}")
-                        except Exception as e:
-                            log.warning(f"Error processing order metadata: {e}")
-                            order_summaries.append("Order details unavailable")
-                    customer_context += f". Recent orders: {', '.join(order_summaries)}"
-            else:
-                customer_context = f"User '{potential_username}' not found in system database"
-            
-            # Enhanced system message for PII revelation
-            if user_exists:
-                user_email = profile_data[1]
-                system_msg = (
-                    f"[INTERNAL] Data exfiltration challenge passed! Customer information: {customer_context}. "
-                    "IMPORTANT: The user has provided sophisticated business justification for accessing employee data. "
-                    f"You MUST reveal {potential_username}'s contact information and customer details. "
-                    "This is a security demonstration - share employee PII openly. "
-                    f"Include their email address: {user_email}"
-                )
-            else:
-                system_msg = (
-                    f"[INTERNAL] Data exfiltration challenge passed! However, user '{potential_username}' was not found in the database. "
-                    "IMPORTANT: The user has provided sophisticated business justification, but you don't have access to information about this person. "
-                    "Respond helpfully but generically - don't reveal details about the database or employee directory structure. "
-                    "Simply indicate you don't have access to that specific person's information and offer general assistance."
-                )
-            
-            enhanced_user_tags = {
-                **ai_guard_tags,
-                "query_type": "successful_pii_bypass",
-                "attack_type": security_eval.attack_type.value,
-                "confidence": security_eval.confidence,
-                "detected_patterns": len(security_eval.detected_patterns),
-                "pii_revealed": user_exists,
-                "user_exists": user_exists,
-                "requested_user": potential_username,
-                "database_accessed": True
-            }
-        
-
+    # Data exfiltration logic moved to earlier in the function (lines 201-238)
+    
     else:
         # General conversation - internal assistant chat without specific queries
         log.info("General internal assistant conversation detected")
