@@ -50,26 +50,9 @@ def get_db_connection():
 
 
 def init_database():
-    """Initialize the SQLite database with the secret token"""
+    """Initialize the SQLite database for PII demo"""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        
-        # Create secrets table if it doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS secrets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL,
-                value TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # Insert the secret token (using INSERT OR REPLACE to handle restarts)
-        secret_value = "DD_LOVES_KL"
-        cursor.execute('''
-            INSERT OR REPLACE INTO secrets (name, value) 
-            VALUES (?, ?)
-        ''', ("SECRET_TOKEN", secret_value))
         
         # Create users table for normal business operations
         cursor.execute('''
@@ -206,75 +189,10 @@ def init_database():
             ''', (user_id, product_name, amount, status))
         
         conn.commit()
-        log.info("Database initialized with secret token")
+        log.info("Database initialized for PII demo")
 
 
-@retrieval
-def query_secret_token():
-    """Query and return the secret token from database"""
-    log.info("@retrieval query_secret_token() called")
-    from langchain.schema import Document
-    from ddtrace.llmobs import LLMObs
-    
-    sql_query = "SELECT value FROM secrets WHERE name = 'SECRET_TOKEN'"
-    
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT value FROM secrets WHERE name = ?", ("SECRET_TOKEN",))
-            result = cursor.fetchone()
-        
-        # Prepare output data for LLM observability
-        if result:
-            secret_value = result[0]
-            log.info("Secret token retrieved from database")
-            output_data = [f"Secret Token: {secret_value}"]
-            
-            # Annotate for LLM observability
-            LLMObs.annotate(
-                input_data=sql_query,
-                output_data=output_data
-            )
-            
-            return [Document(
-                page_content=f"Secret Token: {secret_value}",
-                metadata={
-                    "type": "secret",
-                    "name": "SECRET_TOKEN",
-                    "value": secret_value
-                }
-            )]
-        else:
-            log.error("Secret token not found in database")
-            output_data = ["Secret token not found in database"]
-            
-            # Annotate for LLM observability
-            LLMObs.annotate(
-                input_data=sql_query,
-                output_data=output_data
-            )
-            
-            return [Document(
-                page_content="Secret token not found in database",
-                metadata={"type": "no_results", "name": "SECRET_TOKEN"}
-            )]
-    except Exception as e:
-        log.error(f"Database query error: {e}")
-        output_data = [f"Database error: {str(e)}"]
-        
-        # Annotate for LLM observability
-        LLMObs.annotate(
-            input_data=sql_query,
-            output_data=output_data
-        )
-        
-        return [Document(
-            page_content=f"Database error: {str(e)}",
-            metadata={"type": "error", "name": "SECRET_TOKEN"}
-        )]
-
-
+# Database functions for PII demo - only user profiles and orders
 @retrieval  
 def get_user_orders(username: str):
     """Get orders for a specific user - normal business operation"""
