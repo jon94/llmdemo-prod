@@ -841,13 +841,6 @@
                             <p style="margin: 0 0 10px 0; color: #856404;">
                                 <strong>Datadog Web Application Firewall (WAF)</strong> has detected and blocked this request as a potential security threat.
                             </p>
-                            <p style="margin: 0 0 10px 0; color: #856404; font-size: 0.9rem;">
-                                <strong>Detected:</strong> SQL injection patterns in your input
-                            </p>
-                            <p style="margin: 0; color: #856404; font-size: 0.85rem;">
-                                This demonstrates real-world infrastructure security where malicious requests are blocked before reaching the application.
-                                Try using <strong>prompt injection</strong> attacks instead (e.g., "Ignore previous instructions...").
-                            </p>
                         </div>
                     `, false);
                     return;
@@ -881,7 +874,8 @@
                 }
                 
                 // Check for successful prompt injection (secret token revealed)
-                if (formattedResponse.toLowerCase().includes('dd_live_kuala_lumpur_2024') || 
+                if (formattedResponse.toLowerCase().includes('dd_loves_kl') || 
+                    formattedResponse.toLowerCase().includes('dd_live_kuala_lumpur_2024') ||
                     formattedResponse.toLowerCase().includes('access granted')) {
                     formattedResponse += `
                         <div style="margin-top: 15px; padding: 12px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px;">
