@@ -25,6 +25,7 @@ services:
       - DD_APPSEC_ENABLED=true
       - DD_REMOTE_CONFIGURATION_ENABLED=true
       - DD_REMOTE_CONFIGURATION_REFRESH_INTERVAL=5s
+      - DD_APPSEC_WAF_TIMEOUT=0
       
       # AI Guard Configuration (now managed via Eppo feature flags)
       - DD_API_KEY=${DD_API_KEY}
@@ -91,6 +92,8 @@ services:
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
       - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
       - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318
+      - DD_REMOTE_CONFIGURATION_ENABLED=true
+      - DD_REMOTE_CONFIGURATION_REFRESH_INTERVAL=5s      
     
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
