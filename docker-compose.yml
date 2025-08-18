@@ -23,9 +23,7 @@ services:
       
       # Datadog Application Security (for AI Guard integration)
       - DD_APPSEC_ENABLED=true
-      - DD_REMOTE_CONFIGURATION_ENABLED=true
-      - DD_REMOTE_CONFIGURATION_REFRESH_INTERVAL=5s
-      - DD_APPSEC_WAF_TIMEOUT=0
+      - DD_APPSEC_WAF_TIMEOUT=10000
       
       # AI Guard Configuration (now managed via Eppo feature flags)
       - DD_API_KEY=${DD_API_KEY}
