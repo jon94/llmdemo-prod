@@ -1,5 +1,6 @@
 from flask import request, g
 from functools import lru_cache
+import time
 from ddtrace.llmobs import LLMObs
 from ddtrace.llmobs.utils import Prompt
 from ddtrace.llmobs.decorators import workflow
@@ -42,6 +43,9 @@ def set_security_evaluation_header(security_eval):
 
 @workflow(session_id=lambda: request.remote_addr)
 def process_security_request(prompt, user_name="anonymous", stream=False):
+    # Start timing for root span time_to_first_token metric
+    workflow_start_time = time.time()
+    
     log.info(f"Processing security request: {prompt[:100]}... for user: {user_name}")
     user_tags = build_user_tags()
     from .rag import init_rag_with_sqlite  # Import here to avoid circular dependency
@@ -411,8 +415,12 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
     
 
     
-    # Annotate workflow level tags
-    LLMObs.annotate(tags=enhanced_user_tags)
+    # Annotate workflow level tags with time_to_first_token metric
+    time_to_first_token = time.time() - workflow_start_time
+    LLMObs.annotate(
+        tags=enhanced_user_tags,
+        metrics={"time_to_first_token": time_to_first_token}
+    )
     
     # Make LLM call without hallucination detection
     resp = client.chat.completions.create(
@@ -463,6 +471,9 @@ def process_security_request(prompt, user_name="anonymous", stream=False):
 
 @workflow(session_id=lambda: request.remote_addr)
 def process_ctf_request(msg):
+    # Start timing for root span time_to_first_token metric
+    workflow_start_time = time.time()
+    
     user_tags = build_user_tags()
     
     # System context as specified
@@ -532,7 +543,12 @@ def process_ctf_request(msg):
             enhanced_tags["ctf.challenge_status"] = "failed"
             log.info(f"CTF challenge failed. Reasoning: {evaluation['reasoning']}")
         
-        LLMObs.annotate(tags=enhanced_tags)
+        # Annotate root span with time_to_first_token metric
+        time_to_first_token = time.time() - workflow_start_time
+        LLMObs.annotate(
+            tags=enhanced_tags,
+            metrics={"time_to_first_token": time_to_first_token}
+        )
         
         # Return structured response with evaluation
         return {
