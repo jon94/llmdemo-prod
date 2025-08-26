@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Security Endpoint Stress Test - 300 Concurrent Users
+# Security Endpoint Stress Test - 350 Concurrent Users
 set -e
 
-CONCURRENT_USERS=300
+CONCURRENT_USERS=350
 TEST_DURATION=120
 BASE_URL="https://dd-demo-sg-llm.com"
 
@@ -85,17 +85,18 @@ simulate_user() {
         local prompt_index=$((RANDOM % ${#SECURITY_PROMPTS[@]}))
         local prompt="${SECURITY_PROMPTS[$prompt_index]}"
         
-        # Make request with timing
-        local request_start=$(date +%s)
-        local response=$(curl -s -w "%{http_code}" --max-time 30 -X POST \
+        # Make request with timing (increased timeout for 350 users)
+        local request_start=$(date +%s.%3N)
+        local response=$(curl -s -w "%{http_code}" --max-time 45 --connect-timeout 10 -X POST \
             -H "Content-Type: application/json" \
+            -H "Connection: keep-alive" \
             -d "{\"user_name\":\"user_$user_id\",\"prompt\":\"$prompt\"}" \
             "$BASE_URL/api/security" 2>/dev/null)
-        local request_end=$(date +%s)
+        local request_end=$(date +%s.%3N)
         
         local status_code="${response: -3}"
         local response_body="${response%???}"
-        local duration=$((request_end - request_start))
+        local duration=$(echo "$request_end - $request_start" | bc)
         
         # Log request
         echo "$user_id,/api/security,$status_code,$duration,\"$prompt\"" >> "$RESULTS_DIR/requests.csv"
@@ -125,14 +126,37 @@ for i in $(seq 1 $CONCURRENT_USERS); do
     simulate_user $i &
     if [ $((i % 50)) -eq 0 ]; then
         echo "   Launched $i users..."
+        # Brief pause every 50 users to prevent overwhelming the server
+        sleep 0.5
     fi
 done
 
 echo "⏱️  Running test for ${TEST_DURATION} seconds..."
 echo "   (Check $RESULTS_DIR for real-time results)"
 
+# Monitor progress every 30 seconds
+monitor_progress() {
+    local start_time=$(date +%s)
+    while [ $(($(date +%s) - start_time)) -lt $TEST_DURATION ]; do
+        sleep 30
+        if [ -f "$RESULTS_DIR/requests.csv" ]; then
+            local current_requests=$(tail -n +2 "$RESULTS_DIR/requests.csv" | wc -l)
+            local elapsed=$(($(date +%s) - start_time))
+            local remaining=$((TEST_DURATION - elapsed))
+            echo "   Progress: ${elapsed}s elapsed, ${remaining}s remaining, ${current_requests} requests completed"
+        fi
+    done
+}
+
+# Start progress monitoring in background
+monitor_progress &
+MONITOR_PID=$!
+
 # Wait for all background jobs to complete
 wait
+
+# Stop progress monitoring
+kill $MONITOR_PID 2>/dev/null || true
 
 echo "✅ Security stress test completed!"
 echo "📊 Results saved to: $RESULTS_DIR"
