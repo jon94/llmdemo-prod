@@ -13,6 +13,10 @@ load_dotenv()
 ddtrace.patch_all(logging=True)
 ddtrace.config.logs_injection = True
 
+# Reduce Datadog telemetry noise - suppress all internal DD logs
+logging.getLogger('ddtrace').setLevel(logging.ERROR)  # Blanket suppression of all ddtrace logs
+logging.getLogger('ddtrace.internal').setLevel(logging.CRITICAL)  # Even more aggressive for internal components
+
 # OpenAI clients - balanced performance and reliability
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
