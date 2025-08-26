@@ -27,7 +27,18 @@
           trackUserInteractions: true,
           trackResources: true,
           trackLongTasks: true,
-          defaultPrivacyLevel: 'mask-user-input'
+          defaultPrivacyLevel: 'mask-user-input',
+          allowedTracingUrls: [
+            // Production load balancer domain
+            "https://prod.dd-demo-sg-llm.com",
+            // Main domain
+            "https://dd-demo-sg-llm.com",
+            // API endpoints for both domains
+            /^https:\/\/prod\.dd-demo-sg-llm\.com\/api\//,
+            /^https:\/\/dd-demo-sg-llm\.com\/api\//,
+            // Function for matching both domains
+            (url) => url.startsWith("https://prod.dd-demo-sg-llm.com") || url.startsWith("https://dd-demo-sg-llm.com")
+          ]
         });
         
         // Set user context for RUM attribution
