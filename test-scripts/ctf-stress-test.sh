@@ -5,7 +5,7 @@ set -e
 
 CONCURRENT_USERS=350
 TEST_DURATION=120
-BASE_URL="https://dd-demo-sg-llm.com"
+BASE_URL="https://prod.dd-demo-sg-llm.com"
 
 echo "🎮 CTF Endpoint Stress Test"
 echo "==========================="
