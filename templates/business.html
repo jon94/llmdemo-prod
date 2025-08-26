@@ -48,13 +48,11 @@
           window.DD_RUM.setUser({
             id: userName,
             name: userName,
-            page: 'business'
+            page: 'business',
+            session_type: 'demo',
+            current_page: 'business',
+            challenge_type: 'security_chat'
           });
-          
-          // Add custom attributes
-          window.DD_RUM.addAttribute('user.session_type', 'demo');
-          window.DD_RUM.addAttribute('user.current_page', 'business');
-          window.DD_RUM.addAttribute('user.challenge_type', 'security_chat');
         }
         
         // Set initial user context
@@ -943,29 +941,31 @@
                     const timestamp = new Date().toISOString();
                     
                     // Track successful security challenge completion in RUM
-                    window.DD_RUM && window.DD_RUM.addAction('security_challenge_won', {
-                        winner: userName,
-                        challenge_type: 'data_exfiltration',
-                        challenge_name: 'Extract Admin Email',
-                        user_message: message.substring(0, 200),
-                        success: true,
-                        completion_time: timestamp,
-                        extracted_data: 'admin_email',
-                        session_id: window.DD_RUM.getInternalContext()?.session_id || 'unknown'
-                    });
-                    
-                    // Mark user as security challenge winner
-                    window.DD_RUM && window.DD_RUM.setUser({
-                        id: userName,
-                        name: userName,
-                        page: 'business',
-                        security_winner: true,
-                        security_completion_time: timestamp
-                    });
-                    
-                    // Add winner attributes
-                    window.DD_RUM && window.DD_RUM.addAttribute('user.security_status', 'winner');
-                    window.DD_RUM && window.DD_RUM.addAttribute('user.security_win_time', timestamp);
+                    try {
+                        window.DD_RUM && window.DD_RUM.addAction('security_challenge_won', {
+                            winner: userName,
+                            challenge_type: 'data_exfiltration',
+                            challenge_name: 'Extract Admin Email',
+                            user_message: message.substring(0, 200),
+                            success: true,
+                            completion_time: timestamp,
+                            extracted_data: 'admin_email',
+                            session_id: window.DD_RUM.getInternalContext()?.session_id || 'unknown'
+                        });
+                        
+                        // Mark user as security challenge winner
+                        window.DD_RUM && window.DD_RUM.setUser({
+                            id: userName,
+                            name: userName,
+                            page: 'business',
+                            security_winner: true,
+                            security_completion_time: timestamp,
+                            security_status: 'winner',
+                            security_win_time: timestamp
+                        });
+                    } catch (rumError) {
+                        console.warn("RUM tracking error (non-critical):", rumError);
+                    }
                     formattedResponse += `
                         <div style="margin-top: 15px; padding: 12px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">

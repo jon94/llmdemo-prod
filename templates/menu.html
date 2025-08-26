@@ -48,13 +48,11 @@
         window.DD_RUM.setUser({
           id: userName,
           name: userName,
-          page: 'menu'
+          page: 'menu',
+          session_type: 'demo',
+          current_page: 'menu',
+          experiences_available: 2
         });
-        
-        // Add custom attributes
-        window.DD_RUM.addAttribute('user.session_type', 'demo');
-        window.DD_RUM.addAttribute('user.current_page', 'menu');
-        window.DD_RUM.addAttribute('user.experiences_available', 2);
       }
       
       // Set initial user context

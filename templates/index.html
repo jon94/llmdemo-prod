@@ -48,12 +48,10 @@
         window.DD_RUM.setUser({
           id: userName,
           name: userName,
-          page: 'welcome'
+          page: 'welcome',
+          session_type: 'demo',
+          entry_point: 'index'
         });
-        
-        // Add custom attributes
-        window.DD_RUM.addAttribute('user.session_type', 'demo');
-        window.DD_RUM.addAttribute('user.entry_point', 'index');
       }
       
       // Set initial user context

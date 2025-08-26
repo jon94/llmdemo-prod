@@ -48,13 +48,11 @@
         window.DD_RUM.setUser({
           id: userName,
           name: userName,
-          page: 'ctf'
+          page: 'ctf',
+          session_type: 'demo',
+          current_page: 'ctf',
+          challenge_type: 'guardrail_ctf'
         });
-        
-        // Add custom attributes
-        window.DD_RUM.addAttribute('user.session_type', 'demo');
-        window.DD_RUM.addAttribute('user.current_page', 'ctf');
-        window.DD_RUM.addAttribute('user.challenge_type', 'guardrail_ctf');
       }
       
       // Set initial user context
@@ -673,39 +671,43 @@ Examples:
         });
         
         const result = await response.json();
+        console.log("CTF API Response:", result);
         
         // Use server-side LLM-as-judge evaluation instead of client-side string matching
         const challengeSuccess = result.challenge_completed || false;
         const evaluation = result.evaluation || { reasoning: "No evaluation available", confidence: 0 };
+        console.log("Challenge Success:", challengeSuccess, "Evaluation:", evaluation);
         
         if (challengeSuccess) {
           const userName = sessionStorage.getItem("user_name") || 'anonymous';
           const timestamp = new Date().toISOString();
           
           // Track successful challenge completion in RUM
-          window.DD_RUM && window.DD_RUM.addAction('ctf_challenge_won', {
-            winner: userName,
-            challenge_type: 'guardrail_ctf',
-            challenge_name: 'Pet Recommendation Bypass',
-            user_message: message.substring(0, 200), // First 200 chars for context
-            confidence: evaluation.confidence,
-            reasoning: evaluation.reasoning.substring(0, 300), // Truncate reasoning
-            completion_time: timestamp,
-            session_id: window.DD_RUM.getInternalContext()?.session_id || 'unknown'
-          });
-          
-          // Add user attribute to mark them as a CTF winner
-          window.DD_RUM && window.DD_RUM.setUser({
-            id: userName,
-            name: userName,
-            page: 'ctf',
-            ctf_winner: true,
-            ctf_completion_time: timestamp
-          });
-          
-          // Track as a custom metric for easy dashboarding
-          window.DD_RUM && window.DD_RUM.addAttribute('user.ctf_status', 'winner');
-          window.DD_RUM && window.DD_RUM.addAttribute('user.ctf_win_time', timestamp);
+          try {
+            window.DD_RUM && window.DD_RUM.addAction('ctf_challenge_won', {
+              winner: userName,
+              challenge_type: 'guardrail_ctf',
+              challenge_name: 'Pet Recommendation Bypass',
+              user_message: message.substring(0, 200), // First 200 chars for context
+              confidence: evaluation.confidence,
+              reasoning: evaluation.reasoning.substring(0, 300), // Truncate reasoning
+              completion_time: timestamp,
+              session_id: window.DD_RUM.getInternalContext()?.session_id || 'unknown'
+            });
+            
+            // Update user context to mark them as a CTF winner
+            window.DD_RUM && window.DD_RUM.setUser({
+              id: userName,
+              name: userName,
+              page: 'ctf',
+              ctf_winner: true,
+              ctf_completion_time: timestamp,
+              ctf_status: 'winner',
+              ctf_win_time: timestamp
+            });
+          } catch (rumError) {
+            console.warn("RUM tracking error (non-critical):", rumError);
+          }
           
           responseOutput.innerHTML = `
             <div style="color: #43e97b; font-weight: bold; margin-bottom: 1rem; font-size: 1.2rem;">
@@ -755,16 +757,20 @@ Examples:
           const userName = sessionStorage.getItem("user_name") || 'anonymous';
           
           // Track failed attempts for analytics
-          window.DD_RUM && window.DD_RUM.addAction('ctf_challenge_attempt', {
-            participant: userName,
-            challenge_type: 'guardrail_ctf',
-            challenge_name: 'Pet Recommendation Bypass',
-            user_message: message.substring(0, 200),
-            success: false,
-            confidence: evaluation.confidence,
-            reasoning: evaluation.reasoning.substring(0, 300),
-            attempt_time: new Date().toISOString()
-          });
+          try {
+            window.DD_RUM && window.DD_RUM.addAction('ctf_challenge_attempt', {
+              participant: userName,
+              challenge_type: 'guardrail_ctf',
+              challenge_name: 'Pet Recommendation Bypass',
+              user_message: message.substring(0, 200),
+              success: false,
+              confidence: evaluation.confidence,
+              reasoning: evaluation.reasoning.substring(0, 300),
+              attempt_time: new Date().toISOString()
+            });
+          } catch (rumError) {
+            console.warn("RUM tracking error (non-critical):", rumError);
+          }
           
           responseOutput.innerHTML = `
             <div style="color: #ff9f43; font-weight: bold; margin-bottom: 1rem;">
@@ -778,11 +784,14 @@ Examples:
         }
         
       } catch (error) {
+        console.error("CTF Challenge Error:", error);
+        console.error("Error details:", error.message, error.stack);
         responseOutput.innerHTML = `
           <div style="color: #fa709a; font-weight: bold; margin-bottom: 1rem;">
             ❌ Challenge failed due to system error
           </div>
-          <div>Please try again.</div>
+          <div>Please try again. Check browser console for details.</div>
+          <div style="color: #666; font-size: 0.8rem; margin-top: 0.5rem;">Error: ${error.message}</div>
         `;
       }
     }
