@@ -2,14 +2,21 @@
 
 This guide covers deploying the LLM Demo application to handle **300+ concurrent users** on Google Cloud Platform with full HTTPS, monitoring, and professional domain setup.
 
-## 🏗️ Current Production Architecture
+## 🏗️ Production Architecture Options
 
+### **Option 1: Multi-VM Load Balanced (RECOMMENDED)**
 - **Platform**: Google Cloud Platform (GCP Compute Engine)
-- **VM Instance**: n1-standard-8 (8 vCPUs, 30GB RAM)
+- **Load Balancer**: Google Cloud Load Balancer
+- **VM Instances**: 10x n1-standard-8 (8 vCPUs, 30GB RAM each)
 - **Operating System**: Container-Optimized OS (COS)
-- **Domain**: dd-demo-sg-llm.com (Google Domains + Cloud DNS)
-- **SSL**: Automatic HTTPS with Let's Encrypt
-- **Capacity**: 300+ concurrent users tested and verified
+- **Domain**: prod.dd-demo-sg-llm.com (Google-managed SSL)
+- **Capacity**: 3,500+ concurrent users (tested at 350 users)
+- **Deployment**: Automated with `deploy-to-vms.sh`
+
+### **Option 2: Single VM (Legacy)**
+- **VM Instance**: 1x n1-standard-8 (8 vCPUs, 30GB RAM)
+- **Domain**: dd-demo-sg-llm.com (Let's Encrypt SSL)
+- **Capacity**: 350+ concurrent users tested and verified
 
 ## 📋 Prerequisites
 
@@ -45,6 +52,30 @@ EPPO_API_KEY=xxxxxxx
    ```
 
 ## 🚀 Deployment Steps
+
+### **NEW: Multi-VM Load Balanced Deployment**
+
+#### Quick Setup (Recommended)
+```bash
+# 1. Clone repository
+git clone YOUR_REPO_URL
+cd llmdemo-prod
+
+# 2. Create .env file with API keys
+cp .env.example .env
+# Edit .env with your API keys
+
+# 3. Deploy all VMs and load balancer (automated)
+./deploy-to-vms.sh
+
+# 4. Choose deployment method:
+# 1) Sequential (safer, ask before each VM)
+# 2) Parallel (faster, all VMs at once)
+# 3) Health check only
+```
+
+#### Manual Multi-VM Setup
+If you prefer manual control, follow these steps:
 
 ### Step 1: Deploy VM Infrastructure
 
@@ -214,10 +245,13 @@ preload_app = True        # Memory optimization
 - **API Status**: `https://dd-demo-sg-llm.com/api/rag-status`
 
 ### Datadog Monitoring
-- **APM Traces**: Full request lifecycle
+- **APM Traces**: Full request lifecycle with distributed tracing
+- **RUM (Real User Monitoring)**: Frontend user experience tracking
 - **Custom Metrics**: Business logic monitoring
+- **CTF Winner Tracking**: Real-time challenge completion analytics
 - **Alerts**: Performance degradation detection
 - **Dashboards**: Real-time system metrics
+- **Trace Correlation**: End-to-end visibility from browser to backend
 
 ### Key Metrics to Monitor
 1. **Response Time**: P50, P95, P99 percentiles
@@ -229,15 +263,27 @@ preload_app = True        # Memory optimization
 ## 🧪 Load Testing
 
 ### Production Load Tests
+
+#### **Multi-VM Load Testing**
+```bash
+# Test load balanced setup (350 concurrent users)
+./test-scripts/security-stress-test.sh  # Updated for 350 users
+./test-scripts/ctf-stress-test.sh       # Updated for 350 users
+
+# Deploy updates to all VMs
+./deploy-to-vms.sh
+```
+
+#### **Single VM Load Testing**
 ```bash
 # SSH into VM for testing
 gcloud compute ssh llmdemo-vm --zone=us-central1-a
 
-# Run security-focused stress test (NEW - recommended for security demos)
+# Run security-focused stress test (350 users)
 cd llmdemo-prod
 ./test-scripts/security-stress-test.sh
 
-# Run CTF-focused stress test (NEW - guardrail bypass testing)
+# Run CTF-focused stress test (350 users)
 ./test-scripts/ctf-stress-test.sh
 
 # Run legacy comprehensive test
@@ -433,12 +479,33 @@ dig dd-demo-sg-llm.com A
 
 ## 🎉 Success Criteria
 
+### **Multi-VM Load Balanced Setup**
+Your deployment is successful when:
+- ✅ HTTPS domain accessible: https://prod.dd-demo-sg-llm.com
+- ✅ All 10 VMs healthy and receiving traffic
+- ✅ Load test passes with 350+ users
+- ✅ Datadog APM + RUM monitoring active
+- ✅ CTF winner tracking working in Datadog
+- ✅ Response times 2-3s under 350-user load
+- ✅ Deployment script working: `./deploy-to-vms.sh`
+
+### **Single VM Setup**
 Your deployment is successful when:
 - ✅ HTTPS domain accessible: https://dd-demo-sg-llm.com
 - ✅ All application features working
-- ✅ Load test passes with 300+ users
+- ✅ Load test passes with 350+ users
 - ✅ Datadog monitoring active
 - ✅ SSL certificates auto-renewing
 - ✅ Response times < 2s under load
 
-**Your application is now ready for production demonstrations!** 🚀
+**Your application is now ready for enterprise-scale demonstrations!** 🚀
+
+### **NEW: CTF Winner Tracking Verification**
+```bash
+# Verify RUM tracking is working
+# 1. Complete a CTF challenge
+# 2. Check Datadog RUM for events:
+@type:action @action.name:ctf_challenge_won
+
+# Should show winner username and completion details
+```

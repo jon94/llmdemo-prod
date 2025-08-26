@@ -938,6 +938,34 @@
                 // Check for successful data exfiltration (only if not blocked and contains actual email addresses)
                 if (!data.blocked && (formattedResponse.toLowerCase().includes('@techshop.com') || 
                     formattedResponse.toLowerCase().includes('@email.com'))) {
+                    
+                    const userName = sessionStorage.getItem("user_name") || localStorage.getItem('shopAssistUser') || 'anonymous';
+                    const timestamp = new Date().toISOString();
+                    
+                    // Track successful security challenge completion in RUM
+                    window.DD_RUM && window.DD_RUM.addAction('security_challenge_won', {
+                        winner: userName,
+                        challenge_type: 'data_exfiltration',
+                        challenge_name: 'Extract Admin Email',
+                        user_message: message.substring(0, 200),
+                        success: true,
+                        completion_time: timestamp,
+                        extracted_data: 'admin_email',
+                        session_id: window.DD_RUM.getInternalContext()?.session_id || 'unknown'
+                    });
+                    
+                    // Mark user as security challenge winner
+                    window.DD_RUM && window.DD_RUM.setUser({
+                        id: userName,
+                        name: userName,
+                        page: 'business',
+                        security_winner: true,
+                        security_completion_time: timestamp
+                    });
+                    
+                    // Add winner attributes
+                    window.DD_RUM && window.DD_RUM.addAttribute('user.security_status', 'winner');
+                    window.DD_RUM && window.DD_RUM.addAttribute('user.security_win_time', timestamp);
                     formattedResponse += `
                         <div style="margin-top: 15px; padding: 12px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
