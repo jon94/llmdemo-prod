@@ -1,0 +1,34 @@
+{
+  "test_session": {
+    "start_time": "2025-08-31T17:45:08.485390",
+    "end_time": "2025-08-31T17:45:28.623555",
+    "duration_seconds": 20.138165,
+    "total_users": 5,
+    "total_tests": 11
+  },
+  "security_challenges": {
+    "total_attempts": 5,
+    "successful_attempts": 5,
+    "success_rate": 100.0,
+    "successful_users": [
+      "diana_user_4",
+      "bob_user_2",
+      "alice_user_1",
+      "eve_user_5",
+      "charlie_user_3"
+    ]
+  },
+  "ctf_challenges": {
+    "total_attempts": 6,
+    "successful_attempts": 5,
+    "success_rate": 83.33333333333334,
+    "successful_users": [
+      "diana_user_4",
+      "bob_user_2",
+      "alice_user_1",
+      "eve_user_5",
+      "charlie_user_3"
+    ]
+  },
+  "results_directory": "test_results_20250831_174508"
+}
